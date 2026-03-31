@@ -1,0 +1,188 @@
+{
+  "fsm_state": {
+    "span_tree": {
+      "0": {
+        "state": "State 0",
+        "children": [
+          "1a",
+          "1b",
+          "1c"
+        ]
+      },
+      "1a": {
+        "state": {
+          "state_id": "1a",
+          "assertion": "(Taxiing and Not Immobilising)",
+          "name": "Taxiing &\n\u00ac Immobilising"
+        },
+        "children": []
+      },
+      "1b": {
+        "state": {
+          "state_id": "1b",
+          "assertion": "(Not Immobilising and Stop)",
+          "name": "Stop &\nImmobilising"
+        },
+        "children": [
+          "2a",
+          "2b",
+          "2c"
+        ]
+      },
+      "1c": {
+        "state": {
+          "state_id": "1c",
+          "assertion": "(Stop and Immobilising)",
+          "name": "Stop &\n\u00ac Immobilising"
+        },
+        "children": []
+      },
+      "2a": {
+        "state": {
+          "state_id": "2a",
+          "assertion": "(Engine on and Steps)",
+          "name": "Engine on &\nSteps"
+        },
+        "children": []
+      },
+      "2b": {
+        "state": {
+          "state_id": "2b",
+          "assertion": "(Steps and Engine off)",
+          "name": "Engine off &\nSteps"
+        },
+        "children": []
+      },
+      "2c": {
+        "state": {
+          "state_id": "2c",
+          "assertion": "(Engine off and Open)",
+          "name": null
+        },
+        "children": [
+          "3a",
+          "3b",
+          "3c"
+        ]
+      },
+      "3a": {
+        "state": {
+          "state_id": "3a",
+          "assertion": "(Unloading and Cleaned)",
+          "name": "Unloading &\nCleaned"
+        },
+        "children": []
+      },
+      "3b": {
+        "state": {
+          "state_id": "3b",
+          "assertion": "(Cleaned and Empty)",
+          "name": "Empty &\nCleaned"
+        },
+        "children": []
+      },
+      "3c": {
+        "state": {
+          "state_id": "3c",
+          "assertion": "(Empty and Locked)",
+          "name": "Empty &\nLocked"
+        },
+        "children": []
+      }
+    },
+    "root": "0",
+    "current_id": 4,
+    "suffix_index": 3,
+    "attributes": [
+      "Taxiing",
+      "Immobilising",
+      "Stop",
+      "Engine on",
+      "Open",
+      "Steps",
+      "Engine off",
+      "Unloading",
+      "Locked",
+      "Cleaned",
+      "Empty"
+    ],
+    "latest_states": [
+      "3a",
+      "3b",
+      "3c"
+    ],
+    "transitions": [
+      [
+        "1a",
+        "1c",
+        "a"
+      ],
+      [
+        "1c",
+        "1a",
+        "b"
+      ],
+      [
+        "1c",
+        "2a",
+        "c"
+      ],
+      [
+        "2a",
+        "3a",
+        "d"
+      ],
+      [
+        "3a",
+        "3b",
+        "e"
+      ],
+      [
+        "3b",
+        "3c",
+        "f"
+      ],
+      [
+        "3c",
+        "3b",
+        "g"
+      ],
+      [
+        "2a",
+        "2b",
+        "g"
+      ],
+      [
+        "2b",
+        "2a",
+        "h"
+      ]
+    ],
+    "state_transitions_map": {
+      "1a": {
+        "a": "1c"
+      },
+      "1c": {
+        "b": "1a",
+        "c": "2a"
+      },
+      "2a": {
+        "d": "3a",
+        "g": "2b"
+      },
+      "3a": {
+        "e": "3b"
+      },
+      "3b": {
+        "f": "3c"
+      },
+      "3c": {
+        "g": "3b"
+      },
+      "2b": {
+        "h": "2a"
+      }
+    }
+  },
+  "solver_example": []
+}

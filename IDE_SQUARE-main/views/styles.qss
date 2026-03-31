@@ -1,0 +1,122 @@
+* {
+    color: black;
+}
+
+QWidget#central_widget {
+    background: qlineargradient(y1:0, y2:1, stop:0.1 #d4e1bd, stop:0.7 #f4f9e1, stop:1 #ffffff);
+}
+
+
+QPushButton {
+    padding: 5px;
+    border-radius: 5px;
+    background-color: #b2d6a1;
+    border: 1px solid gray;
+}
+
+QPushButton:hover {
+    background-color: #9dbd8e;
+}
+
+
+QLineEdit {
+    background-color: #ffffff;
+    color: #000000;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    padding: 4px;
+}
+
+QTextEdit {
+    background-color: #ffffff;
+    color: #000000;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    padding: 4px;
+}
+
+QTextEdit:focus {
+    border: 2px solid #4a90e2;
+}
+
+QComboBox {
+    background-color: white;
+    border: 1px solid gray;
+}
+
+GraphicsLayoutWidget#graph {
+    border: 1px solid black;
+}
+
+
+QScrollBar:vertical {
+    border: none;
+    background: transparent;
+    width: 6px;
+    margin: 0px 0px 0px 0px;
+}
+
+QScrollBar::handle:vertical {
+    background: #888;
+    min-height: 20px;
+    border-radius: 3px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #555;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0px;
+    width: 0px;
+}
+
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+    background: none;
+}
+
+
+
+QPushButton#tree_button, #ai_button {
+    background-color: #e0f4d4;
+    font-weight: bold;
+}
+QPushButton#tree_button:hover, #ai_button:hover {
+    background-color: #d6ebca;
+}
+
+
+QPushButton#sm_button, #solver_button {
+    background-color: #cfedc0;
+    font-weight: bold;
+}
+QPushButton#sm_button:hover, #solver_button:hover {
+    background-color: #c0dbb2;
+}
+
+
+QPushButton#square_button, #assertions_button, #gen_button {
+    background-color: #b2d6a1;
+    font-weight: bold;
+}
+QPushButton#square_button:hover, #assertions_button:hover, #gen_button:hover {
+    background-color: #9dbd8e;
+}
+
+
+QPushButton#expand_button, #reset_button {
+    background-color: #a1c8a1;
+    font-weight: bold;
+}
+QPushButton#expand_button:hover, #reset_button:hover, #class_button:hover, #trans_button:hover {
+    background-color: #91b591;
+}
+
+
+
+QPushButton#class_button, #trans_button {
+    background-color: #a1c8a1;
+}
+
+
+

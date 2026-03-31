@@ -1,0 +1,203 @@
+{
+  "description": "Reference models for E1 experiment - Model Quality evaluation. Requirements contain only logical relations (A/E/I/O), system must infer state machines.",
+  "version": "2.0",
+  "reference_models": [
+    {
+      "name": "order_lifecycle",
+      "description": "Order management - infer states from logical constraints",
+      "requirements": "Order processing system:\n- All new orders are pending\n- All pending orders can become processing\n- All processing orders can become completed\n- No cancelled order is processing\n- No completed order is pending\n- Some orders are priority\n- Not all orders are completed",
+      "expected_states": [
+        {"name": "pending", "is_initial": true, "is_final": false, "properties": {}},
+        {"name": "processing", "is_initial": false, "is_final": false, "properties": {}},
+        {"name": "completed", "is_initial": false, "is_final": true, "properties": {}},
+        {"name": "cancelled", "is_initial": false, "is_final": true, "properties": {}}
+      ],
+      "expected_transitions": [
+        {"from_state": "pending", "to_state": "processing", "condition": "start"},
+        {"from_state": "processing", "to_state": "completed", "condition": "finish"},
+        {"from_state": "pending", "to_state": "cancelled", "condition": "cancel"},
+        {"from_state": "processing", "to_state": "cancelled", "condition": "cancel"}
+      ],
+      "expected_entities": ["order", "new_order", "pending_order", "processing_order", "completed_order", "cancelled_order", "priority_order"],
+      "expected_relations": [
+        {"type": "universal_affirmative", "subject": "new_order", "predicate": "pending"},
+        {"type": "universal_affirmative", "subject": "pending_order", "predicate": "can_become_processing"},
+        {"type": "universal_affirmative", "subject": "processing_order", "predicate": "can_become_completed"},
+        {"type": "universal_negative", "subject": "cancelled_order", "predicate": "processing"},
+        {"type": "universal_negative", "subject": "completed_order", "predicate": "pending"},
+        {"type": "particular_affirmative", "subject": "order", "predicate": "priority"},
+        {"type": "particular_negative", "subject": "order", "predicate": "completed"}
+      ],
+      "metadata": {
+        "domain": "e-commerce",
+        "complexity": "medium",
+        "inference_required": true
+      }
+    },
+    {
+      "name": "document_workflow",
+      "description": "Document approval workflow - complex state inference",
+      "requirements": "Document management workflow:\n- All new documents are in draft state\n- All draft documents require review before approval\n- No rejected document is approved\n- No approved document is in draft\n- All reviewed documents are either approved or rejected\n- Some documents require multiple reviews\n- Not all documents are approved",
+      "expected_states": [
+        {"name": "draft", "is_initial": true, "is_final": false, "properties": {}},
+        {"name": "review", "is_initial": false, "is_final": false, "properties": {}},
+        {"name": "approved", "is_initial": false, "is_final": true, "properties": {}},
+        {"name": "rejected", "is_initial": false, "is_final": true, "properties": {}}
+      ],
+      "expected_transitions": [
+        {"from_state": "draft", "to_state": "review", "condition": "submit_for_review"},
+        {"from_state": "review", "to_state": "approved", "condition": "approve"},
+        {"from_state": "review", "to_state": "rejected", "condition": "reject"},
+        {"from_state": "rejected", "to_state": "draft", "condition": "revise"}
+      ],
+      "expected_entities": ["document", "new_document", "draft_document", "reviewed_document", "approved_document", "rejected_document"],
+      "expected_relations": [
+        {"type": "universal_affirmative", "subject": "new_document", "predicate": "draft"},
+        {"type": "universal_affirmative", "subject": "draft_document", "predicate": "requires_review"},
+        {"type": "universal_negative", "subject": "rejected_document", "predicate": "approved"},
+        {"type": "universal_negative", "subject": "approved_document", "predicate": "draft"},
+        {"type": "universal_affirmative", "subject": "reviewed_document", "predicate": "approved_or_rejected"},
+        {"type": "particular_affirmative", "subject": "document", "predicate": "requires_multiple_reviews"},
+        {"type": "particular_negative", "subject": "document", "predicate": "approved"}
+      ],
+      "metadata": {
+        "domain": "enterprise",
+        "complexity": "high",
+        "inference_required": true
+      }
+    },
+    {
+      "name": "user_account",
+      "description": "User account lifecycle - state inference from constraints",
+      "requirements": "User account management:\n- All new accounts are inactive\n- All inactive accounts can be activated\n- No suspended account is active\n- No deleted account is active or suspended\n- All active accounts can be suspended\n- Some accounts are premium\n- Not all accounts are verified",
+      "expected_states": [
+        {"name": "inactive", "is_initial": true, "is_final": false, "properties": {}},
+        {"name": "active", "is_initial": false, "is_final": false, "properties": {}},
+        {"name": "suspended", "is_initial": false, "is_final": false, "properties": {}},
+        {"name": "deleted", "is_initial": false, "is_final": true, "properties": {}}
+      ],
+      "expected_transitions": [
+        {"from_state": "inactive", "to_state": "active", "condition": "activate"},
+        {"from_state": "active", "to_state": "suspended", "condition": "suspend"},
+        {"from_state": "suspended", "to_state": "active", "condition": "reactivate"},
+        {"from_state": "active", "to_state": "deleted", "condition": "delete"},
+        {"from_state": "suspended", "to_state": "deleted", "condition": "delete"}
+      ],
+      "expected_entities": ["account", "new_account", "inactive_account", "active_account", "suspended_account", "deleted_account", "premium_account", "verified_account"],
+      "expected_relations": [
+        {"type": "universal_affirmative", "subject": "new_account", "predicate": "inactive"},
+        {"type": "universal_affirmative", "subject": "inactive_account", "predicate": "can_be_activated"},
+        {"type": "universal_negative", "subject": "suspended_account", "predicate": "active"},
+        {"type": "universal_negative", "subject": "deleted_account", "predicate": "active"},
+        {"type": "universal_affirmative", "subject": "active_account", "predicate": "can_be_suspended"},
+        {"type": "particular_affirmative", "subject": "account", "predicate": "premium"},
+        {"type": "particular_negative", "subject": "account", "predicate": "verified"}
+      ],
+      "metadata": {
+        "domain": "identity",
+        "complexity": "high",
+        "inference_required": true
+      }
+    },
+    {
+      "name": "ticket_support",
+      "description": "Support ticket workflow - minimal description",
+      "requirements": "Support ticket system:\n- All new tickets are open\n- All open tickets can be assigned\n- No closed ticket is open\n- No resolved ticket is open\n- All assigned tickets are being worked on\n- Some tickets are escalated\n- Not all tickets are resolved",
+      "expected_states": [
+        {"name": "open", "is_initial": true, "is_final": false, "properties": {}},
+        {"name": "assigned", "is_initial": false, "is_final": false, "properties": {}},
+        {"name": "resolved", "is_initial": false, "is_final": true, "properties": {}},
+        {"name": "closed", "is_initial": false, "is_final": true, "properties": {}}
+      ],
+      "expected_transitions": [
+        {"from_state": "open", "to_state": "assigned", "condition": "assign"},
+        {"from_state": "assigned", "to_state": "resolved", "condition": "resolve"},
+        {"from_state": "resolved", "to_state": "closed", "condition": "close"},
+        {"from_state": "assigned", "to_state": "open", "condition": "unassign"}
+      ],
+      "expected_entities": ["ticket", "new_ticket", "open_ticket", "assigned_ticket", "resolved_ticket", "closed_ticket", "escalated_ticket"],
+      "expected_relations": [
+        {"type": "universal_affirmative", "subject": "new_ticket", "predicate": "open"},
+        {"type": "universal_affirmative", "subject": "open_ticket", "predicate": "can_be_assigned"},
+        {"type": "universal_negative", "subject": "closed_ticket", "predicate": "open"},
+        {"type": "universal_negative", "subject": "resolved_ticket", "predicate": "open"},
+        {"type": "universal_affirmative", "subject": "assigned_ticket", "predicate": "in_progress"},
+        {"type": "particular_affirmative", "subject": "ticket", "predicate": "escalated"},
+        {"type": "particular_negative", "subject": "ticket", "predicate": "resolved"}
+      ],
+      "metadata": {
+        "domain": "customer-service",
+        "complexity": "medium",
+        "inference_required": true
+      }
+    },
+    {
+      "name": "payment_processing",
+      "description": "Payment transaction states - complex with multiple paths",
+      "requirements": "Payment processing:\n- All new payments are pending\n- All pending payments are either authorized or declined\n- No refunded payment is pending\n- No captured payment is declined\n- All authorized payments can be captured\n- All captured payments can be refunded\n- Some payments are flagged for review\n- Not all payments are captured",
+      "expected_states": [
+        {"name": "pending", "is_initial": true, "is_final": false, "properties": {}},
+        {"name": "authorized", "is_initial": false, "is_final": false, "properties": {}},
+        {"name": "declined", "is_initial": false, "is_final": true, "properties": {}},
+        {"name": "captured", "is_initial": false, "is_final": false, "properties": {}},
+        {"name": "refunded", "is_initial": false, "is_final": true, "properties": {}}
+      ],
+      "expected_transitions": [
+        {"from_state": "pending", "to_state": "authorized", "condition": "authorize"},
+        {"from_state": "pending", "to_state": "declined", "condition": "decline"},
+        {"from_state": "authorized", "to_state": "captured", "condition": "capture"},
+        {"from_state": "authorized", "to_state": "declined", "condition": "void"},
+        {"from_state": "captured", "to_state": "refunded", "condition": "refund"}
+      ],
+      "expected_entities": ["payment", "new_payment", "pending_payment", "authorized_payment", "declined_payment", "captured_payment", "refunded_payment", "flagged_payment"],
+      "expected_relations": [
+        {"type": "universal_affirmative", "subject": "new_payment", "predicate": "pending"},
+        {"type": "universal_affirmative", "subject": "pending_payment", "predicate": "authorized_or_declined"},
+        {"type": "universal_negative", "subject": "refunded_payment", "predicate": "pending"},
+        {"type": "universal_negative", "subject": "captured_payment", "predicate": "declined"},
+        {"type": "universal_affirmative", "subject": "authorized_payment", "predicate": "can_be_captured"},
+        {"type": "universal_affirmative", "subject": "captured_payment", "predicate": "can_be_refunded"},
+        {"type": "particular_affirmative", "subject": "payment", "predicate": "flagged_for_review"},
+        {"type": "particular_negative", "subject": "payment", "predicate": "captured"}
+      ],
+      "metadata": {
+        "domain": "fintech",
+        "complexity": "high",
+        "inference_required": true
+      }
+    },
+    {
+      "name": "inventory_item",
+      "description": "Inventory management - state inference from availability rules",
+      "requirements": "Inventory management:\n- All new items are in stock\n- No reserved item is available\n- No shipped item is in stock\n- All in-stock items can be reserved\n- All reserved items can be shipped\n- Some items are backordered\n- Not all items are shipped",
+      "expected_states": [
+        {"name": "in_stock", "is_initial": true, "is_final": false, "properties": {}},
+        {"name": "reserved", "is_initial": false, "is_final": false, "properties": {}},
+        {"name": "shipped", "is_initial": false, "is_final": true, "properties": {}},
+        {"name": "backordered", "is_initial": false, "is_final": false, "properties": {}}
+      ],
+      "expected_transitions": [
+        {"from_state": "in_stock", "to_state": "reserved", "condition": "reserve"},
+        {"from_state": "reserved", "to_state": "shipped", "condition": "ship"},
+        {"from_state": "reserved", "to_state": "in_stock", "condition": "release"},
+        {"from_state": "in_stock", "to_state": "backordered", "condition": "deplete"},
+        {"from_state": "backordered", "to_state": "in_stock", "condition": "restock"}
+      ],
+      "expected_entities": ["item", "new_item", "in_stock_item", "reserved_item", "shipped_item", "backordered_item", "available_item"],
+      "expected_relations": [
+        {"type": "universal_affirmative", "subject": "new_item", "predicate": "in_stock"},
+        {"type": "universal_negative", "subject": "reserved_item", "predicate": "available"},
+        {"type": "universal_negative", "subject": "shipped_item", "predicate": "in_stock"},
+        {"type": "universal_affirmative", "subject": "in_stock_item", "predicate": "can_be_reserved"},
+        {"type": "universal_affirmative", "subject": "reserved_item", "predicate": "can_be_shipped"},
+        {"type": "particular_affirmative", "subject": "item", "predicate": "backordered"},
+        {"type": "particular_negative", "subject": "item", "predicate": "shipped"}
+      ],
+      "metadata": {
+        "domain": "logistics",
+        "complexity": "medium",
+        "inference_required": true
+      }
+    }
+  ]
+}

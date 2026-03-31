@@ -1,0 +1,165 @@
+{
+  "fsm_state": {
+    "span_tree": {
+      "0": {
+        "state": "State 0",
+        "children": [
+          "1a",
+          "1b",
+          "1c"
+        ]
+      },
+      "1a": {
+        "state": {
+          "state_id": "1a",
+          "assertion": "(Moving  and \u00acControlled)",
+          "name": "Free-flowing traffic"
+        },
+        "children": [
+          "2a",
+          "2b",
+          "2c"
+        ]
+      },
+      "1b": {
+        "state": {
+          "state_id": "1b",
+          "assertion": "(\u00acControlled and \u00acMoving)",
+          "name": "Accident/breakdown situation"
+        },
+        "children": []
+      },
+      "1c": {
+        "state": {
+          "state_id": "1c",
+          "assertion": "(\u00acMoving and Controlled)",
+          "name": "Stopped at traffic control"
+        },
+        "children": []
+      },
+      "2a": {
+        "state": {
+          "state_id": "2a",
+          "assertion": "(Proper_Speed and \u00acProper_Lane)",
+          "name": "Speed limit compliant but improper lane usage (weaving, wrong lane)"
+        },
+        "children": []
+      },
+      "2b": {
+        "state": {
+          "state_id": "2b",
+          "assertion": "(\u00acProper_Lane and \u00acProper_Speed)",
+          "name": "Multiple violations (speeding + improper lane)"
+        },
+        "children": []
+      },
+      "2c": {
+        "state": {
+          "state_id": "2c",
+          "assertion": "(\u00acProper_Speed and Proper_Lane)",
+          "name": "Speeding but in correct lane"
+        },
+        "children": []
+      }
+    },
+    "root": "0",
+    "current_id": 3,
+    "suffix_index": 3,
+    "attributes": [
+      "Moving ",
+      "Controlled",
+      "\u00acControlled",
+      "\u00acMoving",
+      "Proper_Speed",
+      "Proper_Lane",
+      "\u00acProper_Lane",
+      "\u00acProper_Speed"
+    ],
+    "latest_states": [
+      "2a",
+      "2b",
+      "2c"
+    ],
+    "transitions": [
+      [
+        "1b",
+        "1c",
+        "traffic_control_arrives"
+      ],
+      [
+        "1c",
+        "1b",
+        "control_failure"
+      ],
+      [
+        "2a",
+        "2b",
+        "accelerate_while_weaving"
+      ],
+      [
+        "2b",
+        "2a",
+        "slow_down_maintain_poor_lane"
+      ],
+      [
+        "2c",
+        "2b",
+        "change_to_wrong_lane"
+      ],
+      [
+        "2a",
+        "2c",
+        "correct_lane_but_speed_up"
+      ],
+      [
+        "2b",
+        "1b",
+        "crash_due_to_violations"
+      ],
+      [
+        "2a",
+        "1c",
+        "pulled_over_by_police"
+      ],
+      [
+        "2c",
+        "1c",
+        "speed_trap"
+      ],
+      [
+        "1c",
+        "2a",
+        "released_but_confused_about_lane"
+      ],
+      [
+        "1b",
+        "2c",
+        "restart_after_breakdown"
+      ]
+    ],
+    "state_transitions_map": {
+      "1c": {
+        "control_failure": "1b",
+        "released_but_confused_about_lane": "2a"
+      },
+      "1b": {
+        "traffic_control_arrives": "1c",
+        "restart_after_breakdown": "2c"
+      },
+      "2a": {
+        "accelerate_while_weaving": "2b",
+        "correct_lane_but_speed_up": "2c",
+        "pulled_over_by_police": "1c"
+      },
+      "2b": {
+        "slow_down_maintain_poor_lane": "2a",
+        "crash_due_to_violations": "1b"
+      },
+      "2c": {
+        "change_to_wrong_lane": "2b",
+        "speed_trap": "1c"
+      }
+    }
+  },
+  "solver_example": []
+}

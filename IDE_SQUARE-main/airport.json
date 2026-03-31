@@ -1,0 +1,57 @@
+{
+  "fsm_state": {
+    "span_tree": {
+      "0": {
+        "state": "State 0",
+        "children": [
+          "1a",
+          "1b",
+          "1c"
+        ]
+      },
+      "1a": {
+        "state": {
+          "state_id": "1a",
+          "assertion": "(Taxiing and Not Immobilising)",
+          "name": null
+        },
+        "children": []
+      },
+      "1b": {
+        "state": {
+          "state_id": "1b",
+          "assertion": "(Not Immobilising and Stop)",
+          "name": null
+        },
+        "children": []
+      },
+      "1c": {
+        "state": {
+          "state_id": "1c",
+          "assertion": "(Stop and Immobilising)",
+          "name": null
+        },
+        "children": []
+      }
+    },
+    "root": "0",
+    "current_id": 2,
+    "suffix_index": 3,
+    "attributes": [
+      "Taxiing",
+      "Immobilising",
+      "Stop"
+    ],
+    "latest_states": [
+      "1a",
+      "1b",
+      "1c"
+    ],
+    "transitions": [],
+    "state_transitions_map": {}
+  },
+  "solver_example": [
+    "taxing = true, immobilising = false",
+    "immobilising = true, engine_stopped = true"
+  ]
+}

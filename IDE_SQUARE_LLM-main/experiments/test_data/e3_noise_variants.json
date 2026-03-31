@@ -1,0 +1,160 @@
+{
+  "description": "Noise variants for E3 experiment - Robustness to noise in requirements. All variants contain the same core logical content, with increasing levels of noise.",
+  "version": "2.0",
+  "noise_types": {
+    "slight": "Minor ambiguities: synonyms, passive voice, slightly imprecise wording - but same logical content",
+    "heavy": "Major noise: contradictions added, irrelevant statements, vague qualifiers - but core logical content preserved"
+  },
+  "test_cases": [
+    {
+      "name": "order_management",
+      "reference_model": {
+        "name": "order_management",
+        "description": "Order management system with status tracking",
+        "requirements": "Order management system:\n- All new orders are in pending state\n- All pending orders can be processed\n- All processing orders can be completed\n- No cancelled order is in processing state\n- Some orders are priority\n- Not all pending orders are priority",
+        "expected_states": [
+          {"name": "pending", "is_initial": true, "is_final": false, "properties": {}},
+          {"name": "processing", "is_initial": false, "is_final": false, "properties": {}},
+          {"name": "completed", "is_initial": false, "is_final": true, "properties": {}},
+          {"name": "cancelled", "is_initial": false, "is_final": true, "properties": {}}
+        ],
+        "expected_transitions": [
+          {"from_state": "pending", "to_state": "processing", "condition": "start_processing"},
+          {"from_state": "processing", "to_state": "completed", "condition": "complete_order"},
+          {"from_state": "pending", "to_state": "cancelled", "condition": "cancel_order"},
+          {"from_state": "processing", "to_state": "cancelled", "condition": "cancel_order"}
+        ],
+        "expected_entities": ["order", "new_order", "pending_order", "cancelled_order", "priority_order"],
+        "expected_relations": [
+          {"type": "universal_affirmative", "subject": "new_order", "predicate": "pending"},
+          {"type": "universal_affirmative", "subject": "pending_order", "predicate": "can_be_processed"},
+          {"type": "universal_affirmative", "subject": "processing_order", "predicate": "can_be_completed"},
+          {"type": "universal_negative", "subject": "cancelled_order", "predicate": "processing"},
+          {"type": "particular_affirmative", "subject": "order", "predicate": "priority"},
+          {"type": "particular_negative", "subject": "pending_order", "predicate": "priority"}
+        ]
+      },
+      "variants": [
+        {
+          "name": "order_management_clean",
+          "noise_level": "clean",
+          "description": "Clear logical requirements",
+          "requirements": "Order management system:\n- All new orders are in pending state\n- All pending orders can be processed\n- All processing orders can be completed\n- No cancelled order is in processing state\n- Some orders are priority\n- Not all pending orders are priority",
+          "noise_description": "No noise applied - clear A/E/I/O statements"
+        },
+        {
+          "name": "order_management_slight",
+          "noise_level": "slight",
+          "description": "Synonyms and passive voice, same logical content",
+          "requirements": "System for managing orders:\n- Every fresh order starts in pending status\n- Pending orders are able to move to processing\n- Orders being processed can become completed\n- Cancelled orders are never in the processing state\n- Certain orders have priority status\n- Not every pending order is marked as priority",
+          "noise_description": "Synonyms (fresh/new, certain/some), passive voice, but all logical relations preserved"
+        },
+        {
+          "name": "order_management_heavy",
+          "noise_level": "heavy",
+          "description": "Noise added but core logic preserved",
+          "requirements": "Order system requirements (v2.1):\n- The system should be fast and responsive\n- All new orders are generally in pending state\n- Pending orders can usually be moved to processing\n- Processing orders can typically become completed\n- Note: The UI allows users to view order status\n- No cancelled order should be in processing state\n- Some orders have priority (important for SLA)\n- Not all pending orders are priority ones\n- Database optimization is recommended\n- The system integrates with payment processing",
+          "noise_description": "Vague qualifiers (generally, usually, typically), irrelevant info (UI, database, payment), but all A/E/I/O statements preserved"
+        }
+      ]
+    },
+    {
+      "name": "hotel_reservation",
+      "reference_model": {
+        "name": "hotel_reservation",
+        "description": "Hotel room reservation and status management",
+        "requirements": "Hotel reservation system:\n- All premium rooms have a balcony\n- No occupied room is available for reservation\n- Some rooms have an ocean view\n- Some rooms are not air-conditioned\n- All available rooms can become reserved\n- All reserved rooms can become occupied\n- All occupied rooms require cleaning\n- All cleaned rooms become available",
+        "expected_states": [
+          {"name": "available", "is_initial": true, "is_final": false, "properties": {}},
+          {"name": "reserved", "is_initial": false, "is_final": false, "properties": {}},
+          {"name": "occupied", "is_initial": false, "is_final": false, "properties": {}},
+          {"name": "cleaning", "is_initial": false, "is_final": false, "properties": {}}
+        ],
+        "expected_transitions": [
+          {"from_state": "available", "to_state": "reserved", "condition": "make_reservation"},
+          {"from_state": "reserved", "to_state": "occupied", "condition": "check_in"},
+          {"from_state": "occupied", "to_state": "cleaning", "condition": "check_out"},
+          {"from_state": "cleaning", "to_state": "available", "condition": "cleaning_complete"}
+        ],
+        "expected_entities": ["room", "premium_room", "occupied_room", "available_room", "reserved_room"],
+        "expected_relations": [
+          {"type": "universal_affirmative", "subject": "premium_room", "predicate": "has_balcony"},
+          {"type": "universal_negative", "subject": "occupied_room", "predicate": "available"},
+          {"type": "particular_affirmative", "subject": "room", "predicate": "has_ocean_view"},
+          {"type": "particular_negative", "subject": "room", "predicate": "air_conditioned"}
+        ]
+      },
+      "variants": [
+        {
+          "name": "hotel_reservation_clean",
+          "noise_level": "clean",
+          "description": "Clear logical requirements",
+          "requirements": "Hotel reservation system:\n- All premium rooms have a balcony\n- No occupied room is available for reservation\n- Some rooms have an ocean view\n- Some rooms are not air-conditioned\n- All available rooms can become reserved\n- All reserved rooms can become occupied\n- All occupied rooms require cleaning\n- All cleaned rooms become available",
+          "noise_description": "No noise applied - clear A/E/I/O statements"
+        },
+        {
+          "name": "hotel_reservation_slight",
+          "noise_level": "slight",
+          "description": "Synonyms and rephrasing, same logical content",
+          "requirements": "Hotel booking system:\n- Every premium tier room comes with a balcony\n- Occupied rooms are not available for booking\n- Certain rooms offer an ocean view\n- Not every room has air conditioning\n- Available rooms are able to be reserved\n- Reserved rooms may become occupied\n- Occupied rooms need to be cleaned\n- Cleaned rooms return to available status",
+          "noise_description": "Synonyms (booking/reservation, tier added), passive voice, but all logical relations preserved"
+        },
+        {
+          "name": "hotel_reservation_heavy",
+          "noise_level": "heavy",
+          "description": "Noise added but core logic preserved",
+          "requirements": "Hotel room management (internal doc):\n- The hotel has a beautiful lobby and restaurant\n- All premium rooms have a balcony\n- No occupied room is available for reservation\n- Some rooms feature an ocean view (great for guests)\n- Some rooms are not air-conditioned (older wing)\n- Staff training is important for guest satisfaction\n- All available rooms can become reserved\n- All reserved rooms can become occupied\n- All occupied rooms require cleaning after checkout\n- The booking system integrates with third-party platforms\n- All cleaned rooms become available again\n- WiFi is complimentary in all rooms",
+          "noise_description": "Irrelevant info (lobby, WiFi, staff training), parenthetical comments, but all A/E/I/O statements preserved exactly"
+        }
+      ]
+    },
+    {
+      "name": "traffic_light",
+      "reference_model": {
+        "name": "traffic_light",
+        "description": "Traffic light control system",
+        "requirements": "Traffic light control system:\n- All active lights show exactly one color at a time\n- No light shows red and green simultaneously\n- Some intersections have pedestrian signals\n- Not all lights have turn arrows\n- All red lights can become green\n- All green lights can become yellow\n- All yellow lights can become red",
+        "expected_states": [
+          {"name": "red", "is_initial": true, "is_final": false, "properties": {}},
+          {"name": "green", "is_initial": false, "is_final": false, "properties": {}},
+          {"name": "yellow", "is_initial": false, "is_final": false, "properties": {}}
+        ],
+        "expected_transitions": [
+          {"from_state": "red", "to_state": "green", "condition": "timer_expired"},
+          {"from_state": "green", "to_state": "yellow", "condition": "timer_expired"},
+          {"from_state": "yellow", "to_state": "red", "condition": "timer_expired"}
+        ],
+        "expected_entities": ["traffic_light", "active_light", "color", "red", "green", "yellow", "pedestrian_signal", "turn_arrow"],
+        "expected_relations": [
+          {"type": "universal_affirmative", "subject": "active_light", "predicate": "shows_one_color"},
+          {"type": "universal_negative", "subject": "light", "predicate": "shows_red_and_green"},
+          {"type": "particular_affirmative", "subject": "intersection", "predicate": "has_pedestrian_signal"},
+          {"type": "particular_negative", "subject": "light", "predicate": "has_turn_arrow"}
+        ]
+      },
+      "variants": [
+        {
+          "name": "traffic_light_clean",
+          "noise_level": "clean",
+          "description": "Clear logical requirements",
+          "requirements": "Traffic light control system:\n- All active lights show exactly one color at a time\n- No light shows red and green simultaneously\n- Some intersections have pedestrian signals\n- Not all lights have turn arrows\n- All red lights can become green\n- All green lights can become yellow\n- All yellow lights can become red",
+          "noise_description": "No noise applied - clear A/E/I/O statements"
+        },
+        {
+          "name": "traffic_light_slight",
+          "noise_level": "slight",
+          "description": "Synonyms and rephrasing, same logical content",
+          "requirements": "Traffic signal controller:\n- Every active signal displays a single color\n- Red and green are never shown at the same time\n- Certain intersections include pedestrian crossing signals\n- Not every light is equipped with turn arrows\n- Red signals are able to change to green\n- Green signals can transition to yellow\n- Yellow signals return to red",
+          "noise_description": "Synonyms (signal/light, display/show), rephrasing, but all logical relations preserved"
+        },
+        {
+          "name": "traffic_light_heavy",
+          "noise_level": "heavy",
+          "description": "Noise added but core logic preserved",
+          "requirements": "Traffic management system (spec v3):\n- Modern LED technology is recommended for new installations\n- All active lights show exactly one color at a time\n- No light shows red and green simultaneously (safety critical)\n- Some intersections have pedestrian signals\n- Sensors can detect vehicle presence at intersections\n- Not all lights have turn arrows\n- All red lights can become green\n- All green lights can become yellow\n- All yellow lights can become red\n- The control box should be weatherproof\n- Camera integration is optional but recommended",
+          "noise_description": "Irrelevant technical details (LED, sensors, cameras, weatherproof), parenthetical notes, but all A/E/I/O statements preserved exactly"
+        }
+      ]
+    }
+  ]
+}

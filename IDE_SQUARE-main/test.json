@@ -1,0 +1,100 @@
+{
+  "fsm_state": {
+    "span_tree": {
+      "0": {
+        "state": "State 0",
+        "children": [
+          "1a",
+          "1b",
+          "1c"
+        ]
+      },
+      "1a": {
+        "state": {
+          "state_id": "1a",
+          "assertion": "(123 and 11)",
+          "name": "test"
+        },
+        "children": []
+      },
+      "1b": {
+        "state": {
+          "state_id": "1b",
+          "assertion": "(11 and 22)",
+          "name": "test2"
+        },
+        "children": []
+      },
+      "1c": {
+        "state": {
+          "state_id": "1c",
+          "assertion": "(22 and 321)",
+          "name": "the last tetst"
+        },
+        "children": [
+          "2a",
+          "2b",
+          "2c"
+        ]
+      },
+      "2a": {
+        "state": {
+          "state_id": "2a",
+          "assertion": "(asdf and s)",
+          "name": null
+        },
+        "children": []
+      },
+      "2b": {
+        "state": {
+          "state_id": "2b",
+          "assertion": "(s and f)",
+          "name": null
+        },
+        "children": []
+      },
+      "2c": {
+        "state": {
+          "state_id": "2c",
+          "assertion": "(f and ffd)",
+          "name": null
+        },
+        "children": []
+      }
+    },
+    "root": "0",
+    "current_id": 3,
+    "suffix_index": 3,
+    "attributes": [
+      "123",
+      "321",
+      "11",
+      "22",
+      "asdf",
+      "ffd",
+      "s",
+      "f"
+    ],
+    "latest_states": [
+      "2a",
+      "2b",
+      "2c"
+    ],
+    "transitions": [
+      [
+        "1a",
+        "1b",
+        "asdf"
+      ]
+    ],
+    "state_transitions_map": {
+      "1a": {
+        "asdf": "1b"
+      }
+    }
+  },
+  "solver_example": [],
+  "logs": [
+    "2025-05-28 23:39:00: [INFO]: Manually fixed project file"
+  ]
+}

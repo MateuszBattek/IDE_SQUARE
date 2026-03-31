@@ -1,0 +1,591 @@
+{
+  "user_input": "\n    Hotel reservation system requirements:\n    \n    Logical Relations:\n    - All premium rooms have a balcony\n    - No occupied room is available for reservation\n    - Some rooms have an ocean view\n    - Some rooms are not air-conditioned\n    - All deluxe rooms are premium rooms\n    - No budget rooms are premium rooms\n    \n    State Transitions:\n    - A room can transition from available to reserved\n    - A room can transition from reserved to occupied\n    - A room can transition from occupied to cleaning\n    - A room can transition from cleaning to available\n    \n    Entities: room, premium_room, deluxe_room, budget_room, occupied_room, available_room\n    ",
+  "requirements": {
+    "formulas": [
+      {
+        "type": "universal_affirmative",
+        "subject": "premium_room",
+        "predicate": "balcony",
+        "source_text": "All premium rooms have a balcony",
+        "confidence": 1.0
+      },
+      {
+        "type": "universal_negative",
+        "subject": "occupied_room",
+        "predicate": "available",
+        "source_text": "No occupied room is available for reservation",
+        "confidence": 1.0
+      },
+      {
+        "type": "particular_affirmative",
+        "subject": "room",
+        "predicate": "ocean_view",
+        "source_text": "Some rooms have an ocean view",
+        "confidence": 1.0
+      },
+      {
+        "type": "particular_negative",
+        "subject": "room",
+        "predicate": "air_conditioned",
+        "source_text": "Some rooms are not air-conditioned",
+        "confidence": 1.0
+      },
+      {
+        "type": "universal_affirmative",
+        "subject": "deluxe_room",
+        "predicate": "premium_room",
+        "source_text": "All deluxe rooms are premium rooms",
+        "confidence": 1.0
+      },
+      {
+        "type": "universal_negative",
+        "subject": "budget_room",
+        "predicate": "premium_room",
+        "source_text": "No budget rooms are premium rooms",
+        "confidence": 1.0
+      }
+    ],
+    "entities": [
+      "room",
+      "premium_room",
+      "deluxe_room",
+      "budget_room",
+      "occupied_room",
+      "available_room"
+    ],
+    "states": [
+      "available",
+      "reserved",
+      "occupied",
+      "cleaning"
+    ],
+    "transitions": [
+      {
+        "from": "available",
+        "to": "reserved",
+        "condition": null
+      },
+      {
+        "from": "reserved",
+        "to": "occupied",
+        "condition": null
+      },
+      {
+        "from": "occupied",
+        "to": "cleaning",
+        "condition": null
+      },
+      {
+        "from": "cleaning",
+        "to": "available",
+        "condition": null
+      }
+    ],
+    "ambiguities": [
+      "The term 'occupied room' and 'available room' are used as entities but also as states; clarification needed if these are distinct entity classes or state labels.",
+      "The predicate 'have a balcony' and 'have an ocean view' imply attributes rather than class membership; clarification needed if these are considered classes or properties.",
+      "No explicit temporal constraints are provided for state transitions; it is unclear if transitions are instantaneous or have timing constraints."
+    ],
+    "overall_confidence": 0.95
+  },
+  "logic_model": {
+    "relations": [
+      {
+        "relation_type": "universal_affirmative",
+        "subject": "premium_room",
+        "predicate": "balcony",
+        "confidence": 1.0,
+        "source_text": "All premium rooms have a balcony"
+      },
+      {
+        "relation_type": "universal_negative",
+        "subject": "occupied_room",
+        "predicate": "available",
+        "confidence": 1.0,
+        "source_text": "No occupied room is available for reservation"
+      },
+      {
+        "relation_type": "particular_affirmative",
+        "subject": "room",
+        "predicate": "ocean_view",
+        "confidence": 1.0,
+        "source_text": "Some rooms have an ocean view"
+      },
+      {
+        "relation_type": "particular_negative",
+        "subject": "room",
+        "predicate": "air_conditioned",
+        "confidence": 1.0,
+        "source_text": "Some rooms are not air-conditioned"
+      },
+      {
+        "relation_type": "universal_affirmative",
+        "subject": "deluxe_room",
+        "predicate": "premium_room",
+        "confidence": 1.0,
+        "source_text": "All deluxe rooms are premium rooms"
+      },
+      {
+        "relation_type": "universal_negative",
+        "subject": "budget_room",
+        "predicate": "premium_room",
+        "confidence": 1.0,
+        "source_text": "No budget rooms are premium rooms"
+      }
+    ],
+    "entities": [
+      "premium_room",
+      "balcony",
+      "occupied_room",
+      "available",
+      "room",
+      "ocean_view",
+      "air_conditioned",
+      "deluxe_room",
+      "budget_room",
+      "available_room"
+    ],
+    "metadata": {
+      "source": "LLMAgent",
+      "formula_count": 6
+    }
+  },
+  "ontology": {
+    "classes": [
+      {
+        "name": "budget_room",
+        "description": "Class representing budget_room",
+        "subclass_of": [],
+        "disjoint_with": [
+          "premium_room"
+        ],
+        "properties": {
+          "disjointWith_premium_room": {
+            "confidence": 1.0,
+            "source": "E_relation"
+          }
+        },
+        "confidence": 1.0
+      },
+      {
+        "name": "deluxe_room",
+        "description": "Class representing deluxe_room",
+        "subclass_of": [
+          "premium_room"
+        ],
+        "disjoint_with": [],
+        "properties": {
+          "subClassOf_premium_room": {
+            "confidence": 1.0,
+            "source": "A_relation"
+          }
+        },
+        "confidence": 1.0
+      },
+      {
+        "name": "occupied_room",
+        "description": "Class representing occupied_room",
+        "subclass_of": [],
+        "disjoint_with": [],
+        "properties": {
+          "excludes_available": {
+            "confidence": 1.0,
+            "source": "E_relation",
+            "note": "No occupied_room have property available"
+          }
+        },
+        "confidence": 1.0
+      },
+      {
+        "name": "premium_room",
+        "description": "Class representing premium_room",
+        "subclass_of": [],
+        "disjoint_with": [
+          "budget_room"
+        ],
+        "properties": {},
+        "confidence": 1.0
+      },
+      {
+        "name": "room",
+        "description": "Class representing room",
+        "subclass_of": [],
+        "disjoint_with": [],
+        "properties": {
+          "partial_exclusion_air_conditioned": {
+            "type": "O_relation",
+            "confidence": 1.0,
+            "note": "Some room are not air_conditioned"
+          }
+        },
+        "confidence": 1.0
+      }
+    ],
+    "properties": [
+      {
+        "name": "has_balcony",
+        "domain": "premium_room",
+        "range": "balcony",
+        "property_type": "data",
+        "description": "All premium_room have property balcony",
+        "confidence": 1.0
+      },
+      {
+        "name": "has_ocean_view",
+        "domain": "room",
+        "range": "ocean_view",
+        "property_type": "object",
+        "description": "Some room have property ocean_view",
+        "confidence": 1.0
+      }
+    ],
+    "metadata": {
+      "source": "ClassAgent",
+      "logic_entities_count": 10
+    }
+  },
+  "state_machine": {
+    "states": [
+      {
+        "name": "available",
+        "description": null,
+        "is_initial": true,
+        "is_final": false,
+        "properties": {}
+      },
+      {
+        "name": "reserved",
+        "description": "State representing reserved",
+        "is_initial": false,
+        "is_final": false,
+        "properties": {}
+      },
+      {
+        "name": "occupied",
+        "description": "State representing occupied",
+        "is_initial": false,
+        "is_final": false,
+        "properties": {}
+      },
+      {
+        "name": "cleaning",
+        "description": "State representing cleaning",
+        "is_initial": false,
+        "is_final": false,
+        "properties": {}
+      }
+    ],
+    "transitions": [
+      {
+        "from_state": "available",
+        "to_state": "reserved",
+        "condition": "Transition from available to reserved",
+        "action": null,
+        "confidence": 0.95
+      },
+      {
+        "from_state": "reserved",
+        "to_state": "occupied",
+        "condition": "Transition from reserved to occupied",
+        "action": null,
+        "confidence": 0.95
+      },
+      {
+        "from_state": "occupied",
+        "to_state": "cleaning",
+        "condition": "Transition from occupied to cleaning",
+        "action": null,
+        "confidence": 0.95
+      },
+      {
+        "from_state": "cleaning",
+        "to_state": "available",
+        "condition": "Transition from cleaning to available",
+        "action": null,
+        "confidence": 0.95
+      }
+    ],
+    "initial_state": "available",
+    "metadata": {}
+  },
+  "verification_report": {
+    "is_consistent": true,
+    "issues": [
+      {
+        "issue_type": "cross_model_mismatch",
+        "severity": "warning",
+        "description": "Property has_balcony references non-existent range: balcony",
+        "location": "ontology.properties",
+        "affected_elements": [
+          "has_balcony",
+          "balcony"
+        ],
+        "metadata": {}
+      },
+      {
+        "issue_type": "cross_model_mismatch",
+        "severity": "warning",
+        "description": "Property has_ocean_view references non-existent range: ocean_view",
+        "location": "ontology.properties",
+        "affected_elements": [
+          "has_ocean_view",
+          "ocean_view"
+        ],
+        "metadata": {}
+      },
+      {
+        "issue_type": "missing_state",
+        "severity": "warning",
+        "description": "Logic entity air_conditioned not found in ontology",
+        "location": "cross_model",
+        "affected_elements": [
+          "air_conditioned"
+        ],
+        "metadata": {}
+      },
+      {
+        "issue_type": "missing_state",
+        "severity": "warning",
+        "description": "Logic entity ocean_view not found in ontology",
+        "location": "cross_model",
+        "affected_elements": [
+          "ocean_view"
+        ],
+        "metadata": {}
+      },
+      {
+        "issue_type": "missing_state",
+        "severity": "warning",
+        "description": "Logic entity available not found in ontology",
+        "location": "cross_model",
+        "affected_elements": [
+          "available"
+        ],
+        "metadata": {}
+      },
+      {
+        "issue_type": "missing_state",
+        "severity": "warning",
+        "description": "Logic entity available_room not found in ontology",
+        "location": "cross_model",
+        "affected_elements": [
+          "available_room"
+        ],
+        "metadata": {}
+      },
+      {
+        "issue_type": "missing_state",
+        "severity": "warning",
+        "description": "Logic entity balcony not found in ontology",
+        "location": "cross_model",
+        "affected_elements": [
+          "balcony"
+        ],
+        "metadata": {}
+      },
+      {
+        "issue_type": "hallucinated_element",
+        "severity": "warning",
+        "description": "Logic entity balcony not found in original requirements",
+        "location": "logic_model",
+        "affected_elements": [
+          "balcony"
+        ],
+        "metadata": {
+          "possible_hallucination": true
+        }
+      },
+      {
+        "issue_type": "hallucinated_element",
+        "severity": "warning",
+        "description": "Logic entity available not found in original requirements",
+        "location": "logic_model",
+        "affected_elements": [
+          "available"
+        ],
+        "metadata": {
+          "possible_hallucination": true
+        }
+      },
+      {
+        "issue_type": "hallucinated_element",
+        "severity": "warning",
+        "description": "Logic entity ocean_view not found in original requirements",
+        "location": "logic_model",
+        "affected_elements": [
+          "ocean_view"
+        ],
+        "metadata": {
+          "possible_hallucination": true
+        }
+      },
+      {
+        "issue_type": "hallucinated_element",
+        "severity": "warning",
+        "description": "Logic entity air_conditioned not found in original requirements",
+        "location": "logic_model",
+        "affected_elements": [
+          "air_conditioned"
+        ],
+        "metadata": {
+          "possible_hallucination": true
+        }
+      }
+    ],
+    "fixes": [
+      {
+        "issue_id": "fix_2",
+        "fix_type": "add",
+        "description": "Add missing element: air_conditioned",
+        "proposed_changes": {
+          "action": "add_element",
+          "element": "air_conditioned",
+          "location": "cross_model"
+        },
+        "confidence": 0.9,
+        "requires_user_input": false
+      },
+      {
+        "issue_id": "fix_3",
+        "fix_type": "add",
+        "description": "Add missing element: ocean_view",
+        "proposed_changes": {
+          "action": "add_element",
+          "element": "ocean_view",
+          "location": "cross_model"
+        },
+        "confidence": 0.9,
+        "requires_user_input": false
+      },
+      {
+        "issue_id": "fix_4",
+        "fix_type": "add",
+        "description": "Add missing element: available",
+        "proposed_changes": {
+          "action": "add_element",
+          "element": "available",
+          "location": "cross_model"
+        },
+        "confidence": 0.9,
+        "requires_user_input": false
+      },
+      {
+        "issue_id": "fix_5",
+        "fix_type": "add",
+        "description": "Add missing element: available_room",
+        "proposed_changes": {
+          "action": "add_element",
+          "element": "available_room",
+          "location": "cross_model"
+        },
+        "confidence": 0.9,
+        "requires_user_input": false
+      },
+      {
+        "issue_id": "fix_6",
+        "fix_type": "add",
+        "description": "Add missing element: balcony",
+        "proposed_changes": {
+          "action": "add_element",
+          "element": "balcony",
+          "location": "cross_model"
+        },
+        "confidence": 0.9,
+        "requires_user_input": false
+      },
+      {
+        "issue_id": "fix_7",
+        "fix_type": "remove",
+        "description": "Remove potentially hallucinated element: balcony",
+        "proposed_changes": {
+          "action": "remove_element",
+          "element": "balcony",
+          "location": "logic_model"
+        },
+        "confidence": 0.6,
+        "requires_user_input": true
+      },
+      {
+        "issue_id": "fix_8",
+        "fix_type": "remove",
+        "description": "Remove potentially hallucinated element: available",
+        "proposed_changes": {
+          "action": "remove_element",
+          "element": "available",
+          "location": "logic_model"
+        },
+        "confidence": 0.6,
+        "requires_user_input": true
+      },
+      {
+        "issue_id": "fix_9",
+        "fix_type": "remove",
+        "description": "Remove potentially hallucinated element: ocean_view",
+        "proposed_changes": {
+          "action": "remove_element",
+          "element": "ocean_view",
+          "location": "logic_model"
+        },
+        "confidence": 0.6,
+        "requires_user_input": true
+      },
+      {
+        "issue_id": "fix_10",
+        "fix_type": "remove",
+        "description": "Remove potentially hallucinated element: air_conditioned",
+        "proposed_changes": {
+          "action": "remove_element",
+          "element": "air_conditioned",
+          "location": "logic_model"
+        },
+        "confidence": 0.6,
+        "requires_user_input": true
+      }
+    ],
+    "statistics": {
+      "total_issues": 11,
+      "errors": 0,
+      "warnings": 11,
+      "total_fixes": 9,
+      "logic_model_present": true,
+      "ontology_present": true,
+      "state_machine_present": true
+    },
+    "timestamp": "2025-11-15T15:44:59.363689",
+    "metadata": {}
+  },
+  "disjointness_checks": [
+    {
+      "relation": {
+        "subject": "occupied_room",
+        "predicate": "available",
+        "type": "E"
+      },
+      "result": {
+        "is_valid": true,
+        "proof_time_ms": 8,
+        "prover_output": "UNSAT: Classes are disjoint",
+        "counterexample": null,
+        "error_message": null
+      },
+      "assertion": "disjoint(occupied_room, available)",
+      "verified": true
+    },
+    {
+      "relation": {
+        "subject": "budget_room",
+        "predicate": "premium_room",
+        "type": "E"
+      },
+      "result": {
+        "is_valid": true,
+        "proof_time_ms": 1,
+        "prover_output": "UNSAT: Classes are disjoint",
+        "counterexample": null,
+        "error_message": null
+      },
+      "assertion": "disjoint(budget_room, premium_room)",
+      "verified": true
+    }
+  ]
+}
