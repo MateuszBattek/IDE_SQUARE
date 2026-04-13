@@ -9,8 +9,13 @@ from ..agents.base_agent import BaseAgent
 class LLMAgent(BaseAgent):
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__("LLMAgent", config)
-        self.client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        self.model = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+        # self.client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.client = openai.OpenAI(
+            api_key=os.getenv("OPENAI_API_KEY", "ollama"),
+            base_url=os.getenv("OPENAI_API_BASE", "http://localhost:11434/v1")
+        )
+        # self.model = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+        self.model = os.getenv("OPENAI_MODEL", "llama3")
 
     def _normalize_entity(self, text: str) -> str:
         """
