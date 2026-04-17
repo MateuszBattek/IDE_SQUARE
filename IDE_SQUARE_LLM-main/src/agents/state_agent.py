@@ -68,14 +68,8 @@ Respond with a JSON object mapping each entity to its classification:
 """
         
         try:
-            from ..agents.llm_agent import LLMAgent
-            response = await self.llm_agent.client.chat.completions.create(
-                model=self.llm_agent.model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,
-            )
+            result_text = await self.llm_agent._call_llm(prompt, temperature=0.1)
             
-            result_text = response.choices[0].message.content.strip()
             if result_text.startswith("```json"):
                 result_text = result_text[7:].strip()
             if result_text.endswith("```"):

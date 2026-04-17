@@ -16,6 +16,9 @@ class Config:
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
     OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o")
     
+    # Gemini Configuration
+    GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
     
     # Application Settings
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
@@ -31,8 +34,8 @@ class Config:
     
     @classmethod
     def validate(cls) -> None:
-        if not cls.OPENAI_API_KEY:
-            raise ValueError("OPENAI_API_KEY environment variable is required")
+        if not cls.GEMINI_API_KEY and not cls.OPENAI_API_KEY:
+            raise ValueError("Either GEMINI_API_KEY or OPENAI_API_KEY environment variable is required")
 
 
 config = Config()

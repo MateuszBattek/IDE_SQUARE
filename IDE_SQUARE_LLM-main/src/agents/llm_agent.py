@@ -1,16 +1,54 @@
 import os
 import openai
+import google.generativeai as genai
 import json
 import re
 from typing import Dict, Any, Optional, List
 from ..agents.base_agent import BaseAgent
+from ..config import config
 
 
 class LLMAgent(BaseAgent):
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
-        super().__init__("LLMAgent", config)
-        self.client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        self.model = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+    def __init__(self, agent_config: Optional[Dict[str, Any]] = None):
+        super().__init__("LLMAgent", agent_config)
+        
+        # Initialize Google Gemini if API key is available
+        self.gemini_enabled = False
+        if config.GEMINI_API_KEY:
+            genai.configure(api_key=config.GEMINI_API_KEY)
+            self.gemini_model = genai.GenerativeModel(config.GEMINI_MODEL)
+            self.gemini_enabled = True
+            self.model_name = config.GEMINI_MODEL
+        
+        # Initialize OpenAI as fallback/alternative
+        self.openai_client = None
+        if config.OPENAI_API_KEY and not self.gemini_enabled:
+            self.openai_client = openai.OpenAI(api_key=config.OPENAI_API_KEY)
+            self.model_name = config.OPENAI_MODEL
+        
+        if not self.gemini_enabled and not self.openai_client:
+            raise ValueError("No valid LLM API key provided (OpenAI or Gemini)")
+
+    async def _call_llm(self, prompt: str, temperature: float = 0.1) -> str:
+        """Helper to call either Gemini or OpenAI."""
+        if self.gemini_enabled:
+            # Gemini generation
+            generation_config = {
+                "temperature": temperature,
+            }
+            response = await self.gemini_model.generate_content_async(
+                prompt, 
+                generation_config=generation_config
+            )
+            return response.text
+        else:
+            # OpenAI generation
+            response = self.openai_client.chat.completions.create(
+                model=self.model_name,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=temperature,
+            )
+            return response.choices[0].message.content
 
     def _normalize_entity(self, text: str) -> str:
         """
@@ -106,13 +144,7 @@ class LLMAgent(BaseAgent):
         }}
         """
 
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.1,
-        )
-
-        interpretation = response.choices[0].message.content
+        interpretation = await self._call_llm(prompt, temperature=0.1)
 
         if interpretation.startswith("```json"):
             interpretation = interpretation[len("```json") :].strip()
@@ -187,17 +219,11 @@ class LLMAgent(BaseAgent):
         Provide a coordination plan with specific next steps.
         """
 
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.2,
-        )
+        llm_response = await self._call_llm(prompt, temperature=0.2)
 
         return {
-            "coordination_plan": response.choices[0].message.content,
-            "next_agents": self._extract_next_agents(
-                response.choices[0].message.content
-            ),
+            "coordination_plan": llm_response,
+            "next_agents": self._extract_next_agents(llm_response),
             "overall_progress": self._assess_progress(current_results),
         }
 
@@ -302,13 +328,7 @@ class LLMAgent(BaseAgent):
         }}
         """
 
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.05,
-        )
-
-        llm_raw = response.choices[0].message.content.strip()
+        llm_raw = await self._call_llm(prompt, temperature=0.05)
         cleaned = llm_raw
 
         if cleaned.startswith("```json"):
