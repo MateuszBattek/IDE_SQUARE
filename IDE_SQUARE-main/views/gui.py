@@ -90,6 +90,14 @@ QPushButton#tree_button:hover, #ai_button:hover {
     background-color: #d6ebca;
 }
 
+QPushButton#bot_button {
+    background-color: #c8e8f4;
+    font-weight: bold;
+}
+QPushButton#bot_button:hover {
+    background-color: #b4d8e8;
+}
+
 
 QPushButton#sm_button, #solver_button {
     background-color: #cfedc0;
@@ -197,6 +205,12 @@ class Ui_MainWindow(object):
         self.ai_button.setObjectName("ai_button")
         self.ai_button.setText("LLM Chat")
         self.button_h_layout.addWidget(self.ai_button)
+
+        self.bot_button = QtWidgets.QPushButton(self.buttonwidget)
+        self.bot_button.setSizePolicy(sizePolicy)
+        self.bot_button.setObjectName("bot_button")
+        self.bot_button.setText("Bot")
+        self.button_h_layout.addWidget(self.bot_button)
 
         self.solver_button = QtWidgets.QPushButton(self.buttonwidget)
         self.solver_button.setSizePolicy(sizePolicy)
@@ -671,9 +685,66 @@ class Ui_MainWindow(object):
         self.send_request_button.setText("Send Request")
         self.ai_v_layout.addWidget(self.send_request_button, 0, QtCore.Qt.AlignCenter)
 
+        # bot widget
+        self.bot = QtWidgets.QWidget(self.main_widget)
+        self.main_content_layout.addWidget(self.bot)
+        self.bot.setVisible(False)
 
-    
+        self.bot_v_layout = QtWidgets.QVBoxLayout(self.bot)
+        self.bot_v_layout.setContentsMargins(30, 20, 30, 20)
+        self.bot_v_layout.setSpacing(10)
 
+        bot_title = QtWidgets.QLabel(self.bot)
+        bot_title.setFont(font_16)
+        bot_title.setAlignment(QtCore.Qt.AlignCenter)
+        bot_title.setText("IDE Bot")
+        self.bot_v_layout.addWidget(bot_title)
+
+        bot_subtitle = QtWidgets.QLabel(self.bot)
+        bot_subtitle.setFont(font_12)
+        bot_subtitle.setAlignment(QtCore.Qt.AlignCenter)
+        bot_subtitle.setWordWrap(True)
+        bot_subtitle.setText(
+            "Ask me to perform any IDE operation using natural language."
+        )
+        self.bot_v_layout.addWidget(bot_subtitle)
+
+        self.bot.chat_log = QtWidgets.QTextEdit(self.bot)
+        self.bot.chat_log.setReadOnly(True)
+        self.bot.chat_log.setFont(font_10)
+        self.bot.chat_log.setStyleSheet(
+            "background-color: #f7fbf7; color: #000000;"
+            " border: 1px solid #c8dfc8; border-radius: 6px; padding: 6px;"
+        )
+        self.bot_v_layout.addWidget(self.bot.chat_log)
+
+        # input row
+        self.bot_input_row = QtWidgets.QHBoxLayout()
+        self.bot_input_row.setSpacing(10)
+        self.bot_v_layout.addLayout(self.bot_input_row)
+
+        self.bot.prompt_input = QtWidgets.QTextEdit(self.bot)
+        self.bot.prompt_input.setMaximumHeight(80)
+        self.bot.prompt_input.setFont(font_10)
+        self.bot.prompt_input.setPlaceholderText("Type a command…")
+        self.bot.prompt_input.setStyleSheet(
+            "background-color: #ffffff; color: #000000;"
+            " border: 1px solid #c8dfc8; border-radius: 6px; padding: 6px;"
+        )
+        self.bot_input_row.addWidget(self.bot.prompt_input)
+
+        self.bot.send_button = QtWidgets.QPushButton("Send", self.bot)
+        self.bot.send_button.setMinimumSize(80, 80)
+        self.bot.send_button.setFont(font)
+        self.bot.send_button.setObjectName("bot_send_button")
+        self.bot_input_row.addWidget(self.bot.send_button)
+
+        bot_hint = QtWidgets.QLabel("Ctrl+Enter to send", self.bot)
+        bot_hint.setFont(font)
+        bot_hint.setAlignment(QtCore.Qt.AlignRight)
+        bot_hint.setStyleSheet("color: #999999;")
+        self.bot_v_layout.addWidget(bot_hint)
+        # ─────────────────────────────────────────────────────────────────────
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.retranslateUi(MainWindow)

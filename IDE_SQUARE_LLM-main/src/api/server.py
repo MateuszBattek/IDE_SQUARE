@@ -188,3 +188,30 @@ async def workflow_stream(websocket: WebSocket) -> None:
         await websocket.close(code=1011)
         logger.info(f"[WS] Connection closed with error code 1011")
 
+
+# Bot intent endpoint
+
+class BotIntentRequest(BaseModel):
+    message: str
+    fsm_context: Dict[str, Any] = {}
+
+
+@app.post("/bot/intent")
+async def bot_intent(request: BotIntentRequest) -> Dict[str, Any]:
+    """Classify a natural-language command into an IDE operation with parameters."""
+    from src.agents.bot_agent import BotAgent
+
+    try:
+        config.validate()
+        agent = BotAgent()
+        result = await agent.execute({
+            "message": request.message,
+            "fsm_context": request.fsm_context,
+        })
+        if result["success"]:
+            return result["result"]
+        return {"operation": "error", "params": {}, "message": result["error_message"]}
+    except Exception as exc:
+        logger.error(f"[bot/intent] {exc}")
+        return {"operation": "error", "params": {}, "message": str(exc)}
+

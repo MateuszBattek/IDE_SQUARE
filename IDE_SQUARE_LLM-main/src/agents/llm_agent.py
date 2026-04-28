@@ -11,39 +11,43 @@ from ..config import config
 class LLMAgent(BaseAgent):
     def __init__(self, agent_config: Optional[Dict[str, Any]] = None):
         super().__init__("LLMAgent", agent_config)
-        
-        # Initialize Google Gemini if API key is available
+
         self.gemini_enabled = False
-        if config.GEMINI_API_KEY:
+        self.openai_client = None
+
+        if config.OLLAMA_MODEL:
+            self.openai_client = openai.AsyncOpenAI(
+                base_url=config.OLLAMA_BASE_URL,
+                api_key="ollama",
+            )
+            self.model_name = config.OLLAMA_MODEL
+
+        elif config.GEMINI_API_KEY:
             genai.configure(api_key=config.GEMINI_API_KEY)
             self.gemini_model = genai.GenerativeModel(config.GEMINI_MODEL)
             self.gemini_enabled = True
             self.model_name = config.GEMINI_MODEL
-        
-        # Initialize OpenAI as fallback/alternative
-        self.openai_client = None
-        if config.OPENAI_API_KEY and not self.gemini_enabled:
-            self.openai_client = openai.OpenAI(api_key=config.OPENAI_API_KEY)
+
+        elif config.OPENAI_API_KEY:
+            self.openai_client = openai.AsyncOpenAI(api_key=config.OPENAI_API_KEY)
             self.model_name = config.OPENAI_MODEL
-        
-        if not self.gemini_enabled and not self.openai_client:
-            raise ValueError("No valid LLM API key provided (OpenAI or Gemini)")
+
+        else:
+            raise ValueError(
+                "No LLM configured. Set OLLAMA_MODEL (local) or one of: "
+                "GEMINI_API_KEY, OPENAI_API_KEY."
+            )
 
     async def _call_llm(self, prompt: str, temperature: float = 0.1) -> str:
-        """Helper to call either Gemini or OpenAI."""
         if self.gemini_enabled:
-            # Gemini generation
-            generation_config = {
-                "temperature": temperature,
-            }
+            generation_config = {"temperature": temperature}
             response = await self.gemini_model.generate_content_async(
-                prompt, 
-                generation_config=generation_config
+                prompt,
+                generation_config=generation_config,
             )
             return response.text
         else:
-            # OpenAI generation
-            response = self.openai_client.chat.completions.create(
+            response = await self.openai_client.chat.completions.create(
                 model=self.model_name,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=temperature,
