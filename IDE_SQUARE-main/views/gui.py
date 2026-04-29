@@ -704,9 +704,9 @@ class Ui_MainWindow(object):
         bot_subtitle.setFont(font_12)
         bot_subtitle.setAlignment(QtCore.Qt.AlignCenter)
         bot_subtitle.setWordWrap(True)
-        bot_subtitle.setText(
-            "Ask me to perform any IDE operation using natural language."
-        )
+        # bot_subtitle.setText(
+        #     "Ask me to perform any IDE operation using natural language."
+        # )
         self.bot_v_layout.addWidget(bot_subtitle)
 
         self.bot.chat_log = QtWidgets.QTextEdit(self.bot)

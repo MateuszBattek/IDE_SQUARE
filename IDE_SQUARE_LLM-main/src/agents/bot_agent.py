@@ -1,8 +1,12 @@
+import asyncio
 import json
+import logging
 import re
 from typing import Any, Dict, Optional
 
 from ..agents.base_agent import BaseAgent
+
+logger = logging.getLogger(__name__)
 
 _OPERATIONS = """\
 add_square(a, e, i, o, parent_id?)
@@ -10,6 +14,8 @@ add_square(a, e, i, o, parent_id?)
   parent_id: REQUIRED when the FSM already has states — must be one of the IDs from
   the "States eligible for expansion" list. Omit only when the project is empty.
   Constraint: a != o AND e != i (these are opposites in the Square of Opposition).
+  All four values (a, e, i, o) MUST describe only the NEW square's own domain —
+  never copy or reference the parent state's assertion.
 
 assign_name(state_id, name)
   Assign a human-readable label to a state by its ID.
@@ -96,10 +102,29 @@ Rules:
 - For add_square: a and o MUST be different values; e and i MUST be different values. If the user's input would violate this, use operation "unknown" and explain the constraint.
 - For generate_code: params.format must be "class", "transition", or "qt".
 - For check_states: params.states must be a JSON array of strings.
-- For add_square with no explicit parent, omit parent_id from params.\
+- For add_square with no explicit parent, omit parent_id from params.
+- For add_square: if fewer than 4 corners are given, infer the missing ones using the Square of Opposition:
+    A (universal affirmative)  is contradictory to O (particular negative)   → if A is known, O = negation of A; and vice-versa.
+    E (universal negative)     is contradictory to I (particular affirmative) → if E is known, I = negation of E; and vice-versa.
+    A and E are contrary  (cannot both be true).
+    I and O are subcontrary (cannot both be false).
+  Use these rules to produce a logically consistent set of 4 assertions. The inferred assertions must describe the same conceptual domain as the ones supplied.
+- For add_square: the values of a, e, i, o MUST express only the new square's own logic — never include or echo the parent state's assertion string. The parent state is context only.\
 """
 
-        raw = await self._llm_agent._call_llm(prompt, temperature=0.1)
+        try:
+            raw = await asyncio.wait_for(
+                self._llm_agent._call_llm(prompt, temperature=0.1),
+                timeout=120.0,
+            )
+        except asyncio.TimeoutError:
+            result = {
+                "operation": "unknown",
+                "params": {},
+                "message": "I didn't understand that — please try rephrasing your command.",
+            }
+            logger.info("[BotAgent] operation: %s", json.dumps(result, ensure_ascii=False))
+            return result
 
         cleaned = raw.strip()
         cleaned = re.sub(r"^```[a-z]*\n?", "", cleaned)
@@ -107,14 +132,17 @@ Rules:
 
         try:
             parsed = json.loads(cleaned)
-            return {
+            result = {
                 "operation": parsed.get("operation", "unknown"),
                 "params": parsed.get("params", {}),
                 "message": parsed.get("message", ""),
             }
         except json.JSONDecodeError:
-            return {
+            result = {
                 "operation": "unknown",
                 "params": {},
                 "message": "I could not parse the response. Please try rephrasing.",
             }
+
+        logger.info("[BotAgent] operation: %s", json.dumps(result, ensure_ascii=False))
+        return result
