@@ -1,4 +1,3 @@
-import asyncio
 import json
 import logging
 import os
@@ -6,7 +5,7 @@ import sqlite3
 import traceback
 import uuid
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
@@ -45,7 +44,9 @@ def _init_db() -> None:
         conn.commit()
 
 
-def _save_session_result(session_id: str, requirements: str, result: Dict[str, Any]) -> None:
+def _save_session_result(
+    session_id: str, requirements: str, result: dict[str, Any]
+) -> None:
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute(
             """
@@ -57,7 +58,7 @@ def _save_session_result(session_id: str, requirements: str, result: Dict[str, A
         conn.commit()
 
 
-def _load_session_result(session_id: str) -> Optional[Dict[str, Any]]:
+def _load_session_result(session_id: str) -> dict[str, Any] | None:
     with sqlite3.connect(DB_PATH) as conn:
         cur = conn.execute(
             "SELECT result_json FROM session_results WHERE session_id = ?",
@@ -93,7 +94,9 @@ async def workflow_stream(websocket: WebSocket) -> None:
     try:
         logger.debug("[WS] Waiting for initial message...")
         initial_msg = await websocket.receive_json()
-        logger.info(f"[WS] Received initial message: {json.dumps(initial_msg)[:200]}...")
+        logger.info(
+            f"[WS] Received initial message: {json.dumps(initial_msg)[:200]}..."
+        )
 
         requirements: str = initial_msg.get("requirements", "")
         if not requirements:
@@ -104,7 +107,7 @@ async def workflow_stream(websocket: WebSocket) -> None:
         logger.info(f"[WS] Session ID: {session_id}")
 
         await websocket.send_json({"type": "session", "session_id": session_id})
-        logger.debug(f"[WS] Sent session confirmation")
+        logger.debug("[WS] Sent session confirmation")
 
         # Validate config before processing
         logger.debug("[WS] Validating config...")
@@ -120,10 +123,12 @@ async def workflow_stream(websocket: WebSocket) -> None:
         logger.info("[WS] Creating workflow...")
         workflow = SquareIDEWorkflow()
         initial_state = WorkflowState(requirements=requirements).model_dump()
-        logger.debug(f"[WS] Initial state created with requirements: {requirements[:100]}...")
+        logger.debug(
+            f"[WS] Initial state created with requirements: {requirements[:100]}..."
+        )
 
         # Accumulate the full state from node updates
-        accumulated_state: Dict[str, Any] = {}
+        accumulated_state: dict[str, Any] = {}
         step_count = 0
 
         logger.info("[WS] Starting workflow stream...")
@@ -143,16 +148,18 @@ async def workflow_stream(websocket: WebSocket) -> None:
             logger.debug(f"[WS] Step {step_count}: node={list(update.keys())}")
 
             # Send the accumulated state as event so client sees full picture
-            await websocket.send_json({
-                "type": "event",
-                "data": {
-                    "step": step_count,
-                    "node": list(update.keys())[0] if update else "unknown",
-                    "state_machine": accumulated_state.get("state_machine", {}),
-                    "logic_model": accumulated_state.get("logic_model", {}),
-                    "messages": accumulated_state.get("messages", []),
+            await websocket.send_json(
+                {
+                    "type": "event",
+                    "data": {
+                        "step": step_count,
+                        "node": list(update.keys())[0] if update else "unknown",
+                        "state_machine": accumulated_state.get("state_machine", {}),
+                        "logic_model": accumulated_state.get("logic_model", {}),
+                        "messages": accumulated_state.get("messages", []),
+                    },
                 }
-            })
+            )
             logger.debug(f"[WS] Sent event for step {step_count}")
 
         logger.info(f"[WS] Workflow completed after {step_count} steps")
@@ -168,13 +175,15 @@ async def workflow_stream(websocket: WebSocket) -> None:
 
         states_count = len(payload.get("state_machine", {}).get("states", []))
         transitions_count = len(payload.get("state_machine", {}).get("transitions", []))
-        logger.info(f"[WS] Final payload: {states_count} states, {transitions_count} transitions")
+        logger.info(
+            f"[WS] Final payload: {states_count} states, {transitions_count} transitions"
+        )
 
         _save_session_result(session_id, requirements, payload)
-        logger.debug(f"[WS] Session result saved")
+        logger.debug("[WS] Session result saved")
 
         await websocket.send_json({"type": "final", "data": payload})
-        logger.info(f"[WS] Sent final payload to client")
+        logger.info("[WS] Sent final payload to client")
 
     except WebSocketDisconnect:
         logger.warning(f"[WS] Client {client_host} disconnected")
@@ -186,32 +195,109 @@ async def workflow_stream(websocket: WebSocket) -> None:
             {"type": "error", "error": str(exc), "detail": "workflow failed"}
         )
         await websocket.close(code=1011)
-        logger.info(f"[WS] Connection closed with error code 1011")
+        logger.info("[WS] Connection closed with error code 1011")
 
 
 # Bot intent endpoint
 
+
 class BotIntentRequest(BaseModel):
     message: str
-    fsm_context: Dict[str, Any] = {}
+    fsm_context: dict[str, Any] = {}
 
 
 @app.post("/bot/intent")
-async def bot_intent(request: BotIntentRequest) -> Dict[str, Any]:
+async def bot_intent(request: BotIntentRequest) -> dict[str, Any]:
     """Classify a natural-language command into an IDE operation with parameters."""
     from src.agents.bot_agent import BotAgent
+    from src.agents.class_agent import ClassAgent
+    from src.agents.logic_agent import LogicAgent
+
+    from ..models import OntologyModel
 
     try:
         config.validate()
         agent = BotAgent()
-        result = await agent.execute({
-            "message": request.message,
-            "fsm_context": request.fsm_context,
-        })
-        if result["success"]:
-            return result["result"]
-        return {"operation": "error", "params": {}, "message": result["error_message"]}
+        logic_agent = LogicAgent()
+        class_agent = ClassAgent()
+
+        bot_result = await agent.execute(
+            {
+                "message": request.message,
+                "fsm_context": request.fsm_context,
+            }
+        )
+        if not bot_result["success"]:
+            return {
+                "operation": "error",
+                "params": {},
+                "message": bot_result["error_message"],
+            }
+
+        intent = bot_result["result"]
+
+        if intent["operation"] == "add_square":
+            params = intent["params"]
+
+            # Przygotowujemy dane dla LogicAgent
+            logic_input = {
+                "requirements": {
+                    "formulas": [
+                        {
+                            "type": "universal_affirmative",
+                            "subject": "state",
+                            "predicate": params.get("a"),
+                        },
+                        {
+                            "type": "universal_negative",
+                            "subject": "state",
+                            "predicate": params.get("e"),
+                        },
+                        {
+                            "type": "particular_affirmative",
+                            "subject": "state",
+                            "predicate": params.get("i"),
+                        },
+                        {
+                            "type": "particular_negative",
+                            "subject": "state",
+                            "predicate": params.get("o"),
+                        },
+                    ]
+                }
+            }
+
+            logic_res = await logic_agent.process(logic_input)
+
+            # KROK 3: Jeśli LogicAgent znajdzie sprzeczność, blokujemy operację
+            if not logic_res["is_consistent"]:
+                # Pobieramy pierwszy opis błędu z listy sprzeczności
+                error_msg = logic_res["contradictions"][0]["description"]
+                return {
+                    "operation": "unknown",
+                    "params": {},
+                    "message": f"Logika kwadratu jest błędna: {error_msg}",
+                }
+
+        ontology_res = await class_agent.process(
+            {"logic_model": logic_input["requirements"]}
+        )
+
+        # Jeśli ClassAgent wykryje np. cykle w dziedziczeniu (A->B, B->A)
+        ontology_data = ontology_res["ontology"]
+        ontology_object = OntologyModel(**ontology_data)
+        validation = class_agent.validate_ontology(ontology_object)
+        if not validation["is_valid"]:
+            return {
+                "operation": "error",
+                "message": f"Błąd struktury ontologii: {validation['issues'][0]['description']}",
+            }
+
+        # Dołączamy model ontologii do odpowiedzi dla GUI
+        intent["ontology_model"] = ontology_res["ontology"]
+
+        return intent
+
     except Exception as exc:
         logger.error(f"[bot/intent] {exc}")
         return {"operation": "error", "params": {}, "message": str(exc)}
-
