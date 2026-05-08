@@ -78,6 +78,7 @@ class MainWindowController(QtWidgets.QMainWindow):
             button.clicked.connect(self._gui_generate_code)
 
         self.ui.reset_button.clicked.connect(self.reset_action)
+        self.bot_client._clear_history()
 
     # ── Core operations (no GUI dependencies — callable by the bot) ───────────
 
@@ -476,6 +477,7 @@ class MainWindowController(QtWidgets.QMainWindow):
         self.__init__()
         self.logger.reset_logs()
         self.logger.log("Project reset.")
+        self.bot_client._clear_history()
         self.show()
 
     # ── Bot ───────────────────────────────────────────────────────────────────
@@ -548,15 +550,11 @@ class MainWindowController(QtWidgets.QMainWindow):
         self.bot_client.send_message_async(prompt, self._build_fsm_snapshot())
 
     def _on_bot_response(self, result: dict):
-        print(f"DEBUG: Otrzymano operację: {result.get('operation')}")
         self.ui.bot.send_button.setEnabled(True)
         operation = result.get("operation", "unknown")
         params = result.get("params", {})
         message = result.get("message", "")
         data = result.get("data", {})
-        print(
-            f"Operation: {operation}, Params: {params}, Message: {message}, Data: {data}"
-        )
 
         if operation in ("unknown", "error"):
             self._bot_append_system(message)
@@ -582,9 +580,11 @@ class MainWindowController(QtWidgets.QMainWindow):
         )
 
         if reply == QtWidgets.QMessageBox.No:
-            self._bot_append_system("Operation canseled by user.")
+            self._bot_append_system("Operation canceled by user.")
+            self.bot_client._add_to_history("Operation canceled by user.")
             return
-
+        elif reply == QtWidgets.QMessageBox.Yes:
+            self.bot_client._add_to_history("Operation confirmed by user.")
         if message:
             self._bot_append_bot(message)
 
@@ -615,14 +615,21 @@ class MainWindowController(QtWidgets.QMainWindow):
                 )
 
         elif operation == "assign_name":
-            state_id = (
+            state_ids = (
                 params.get("state_id") or params.get("state") or params.get("id", "")
             )
-            name = params.get("name") or params.get("label", "")
-            self.assign_name(state_id=state_id, name=name)
-            self._bot_append_system(
-                f"Done — state <b>{state_id}</b> named <b>{name}</b>."
-            )
+            names = params.get("name") or params.get("label", "")
+
+            if not isinstance(state_ids, list):
+                state_ids = [state_ids]
+            if not isinstance(names, list):
+                names = [names]
+            for s_id, n in zip(state_ids, names):
+                if s_id and n:  # Sprawdzamy czy nie są puste
+                    self.assign_name(state_id=s_id, name=n)
+                    self._bot_append_system(
+                        f"Done — state <b>{s_id}</b> named <b>{n}</b>."
+                    )
 
         elif operation == "add_transition":
             event = (
@@ -639,24 +646,57 @@ class MainWindowController(QtWidgets.QMainWindow):
                     "Please repeat with the event explicitly, e.g. \"add transition from 1b to 1c on event 'start engine'\"."
                 )
             else:
-                from_state = params.get("from_state") or params.get("from", "")
-                to_state = params.get("to_state") or params.get("to", "")
-                error = self.add_transition(
-                    from_state=from_state, to_state=to_state, event=event
+                from_raw = params.get("from_state") or params.get("from") or ""
+                to_raw = params.get("to_state") or params.get("to") or ""
+                event_raw = (
+                    params.get("event")
+                    or params.get("event_name")
+                    or params.get("label")
+                    or params.get("trigger")
+                    or params.get("condition")
+                    or ""
                 )
-                if error:
-                    self._bot_append_system(f"Could not add transition: {error}")
-                else:
-                    transitions = [(t[0], t[1], t[2]) for t in self.fsm.transitions]
-                    all_states = [
-                        (k, v)
-                        for k, v in self.fsm.span_tree.items()
-                        if k not in self.expanded_states
-                    ]
-                    gg.draw_state_machine(self.ui.sm_plot, transitions, all_states)
+
+                from_list = from_raw if isinstance(from_raw, list) else [from_raw]
+                to_list = to_raw if isinstance(to_raw, list) else [to_raw]
+                event_list = event_raw if isinstance(event_raw, list) else [event_raw]
+
+                if not any(event_list):
                     self._bot_append_system(
-                        f"Done — transition <b>{from_state} → {to_state}</b> on event <b>{event}</b>."
+                        "Could not add transition: I missed the event names. "
+                        "Please repeat with the event explicitly."
                     )
+                else:
+                    added_any = False
+
+                    # 4. Iteracja po wszystkich tranzycjach (zip połączy elementy w pary/trójki)
+                    for f_state, t_state, evt in zip(from_list, to_list, event_list):
+                        if not f_state or not t_state or not evt:
+                            continue
+
+                        error = self.add_transition(
+                            from_state=f_state, to_state=t_state, event=evt
+                        )
+
+                        if error:
+                            self._bot_append_system(
+                                f"Could not add transition {f_state}→{t_state}: {error}"
+                            )
+                        else:
+                            self._bot_append_system(
+                                f"Done — transition <b>{f_state} → {t_state}</b> on event <b>{evt}</b>."
+                            )
+                            added_any = True
+
+                    # 5. Odśwież wykres tylko raz, jeśli dodano chociaż jedną tranzycję
+                    if added_any:
+                        transitions = [(t[0], t[1], t[2]) for t in self.fsm.transitions]
+                        all_states = [
+                            (k, v)
+                            for k, v in self.fsm.span_tree.items()
+                            if k not in self.expanded_states
+                        ]
+                        gg.draw_state_machine(self.ui.sm_plot, transitions, all_states)
 
         elif operation == "check_states":
             states = params.get("states", [])
@@ -682,22 +722,6 @@ class MainWindowController(QtWidgets.QMainWindow):
 
         elif operation == "reset":
             self.reset_action()
-
-        elif operation == "build_system":
-            # Bot przeanalizował tekst i wygenerował listę kroków
-            steps = params.get("steps", [])
-            for step in steps:
-                op = step.get("operation")
-                p = step.get("params", {})
-                if op == "add_square":
-                    self.add_square(**p)
-                elif op == "add_transition":
-                    self.add_transition(**p)
-
-            self.show_tree_widget()
-            self._bot_append_system(
-                "System został zbudowany na podstawie Twojego opisu."
-            )
 
     def _on_bot_error(self, error_msg: str):
         self.ui.bot.send_button.setEnabled(True)

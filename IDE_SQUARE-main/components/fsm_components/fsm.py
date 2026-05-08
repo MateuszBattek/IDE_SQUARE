@@ -1,28 +1,30 @@
-from components.fsm_components.state import State
-from string import ascii_lowercase
 from copy import deepcopy
+from string import ascii_lowercase
+
 from components.fsm_components.code_generator import (
-    generate_class_code,
-    generate_transition_code,
-    generate_qt_code,
     generate_assertion_code,
+    generate_class_code,
+    generate_qt_code,
+    generate_transition_code,
 )
+from components.fsm_components.state import State
+
 
 class LogicalSquareFSM:
     def __init__(self, init_state=None):
         if init_state:
-            self.root = init_state['root']
-            self.span_tree = init_state['span_tree']
-            self.current_id = init_state['current_id']
-            self.suffix_index = init_state['suffix_index']
-            self.attributes = init_state['attributes']
-            self.latest_states = init_state['latest_states']
-            self.transitions = init_state['transitions']
-            self.state_transitions_map = init_state['state_transitions_map']
+            self.root = init_state["root"]
+            self.span_tree = init_state["span_tree"]
+            self.current_id = init_state["current_id"]
+            self.suffix_index = init_state["suffix_index"]
+            self.attributes = init_state["attributes"]
+            self.latest_states = init_state["latest_states"]
+            self.transitions = init_state["transitions"]
+            self.state_transitions_map = init_state["state_transitions_map"]
             return
 
         self.span_tree = {}  # Drzewo przechowujące stany i przejścia
-        self.root = '0'  # Korzeń drzewa, reprezentuje initial state
+        self.root = "0"  # Korzeń drzewa, reprezentuje initial state
         self.span_tree[self.root] = {"state": "State 0", "children": []}
         self.current_id = 1  # Unikalne ID dla każdego stanu
         self.suffix_index = 0
@@ -101,10 +103,10 @@ class LogicalSquareFSM:
             if isinstance(state, State):
                 if len(name) > 0:
                     state.name = name
-                    print(f"Przypisano nazwę '{name}' do stanu o ID {state_id}.")
+                    # print(f"Przypisano nazwę '{name}' do stanu o ID {state_id}.")
                 else:
                     state.name = None
-                    print(f"Usunięto nazwę stanu o ID {state_id}.")
+                    # print(f"Usunięto nazwę stanu o ID {state_id}.")
             else:
                 print(f"Błąd: Stan o ID {state_id} nie jest instancją klasy State.")
         else:
@@ -153,7 +155,9 @@ class LogicalSquareFSM:
             node_id = self.root
 
         node = self.span_tree[node_id]["state"]
-        tree_str = " " * (2 * level) + str(node) + "\n"  # Dodajemy nową linię po każdym stanie
+        tree_str = (
+            " " * (2 * level) + str(node) + "\n"
+        )  # Dodajemy nową linię po każdym stanie
         for child_id in self.span_tree[node_id]["children"]:
             tree_str += self.display_tree(child_id, level + 1)
 
@@ -182,12 +186,13 @@ class LogicalSquareFSM:
         # return f"State{from_state}  ->  State{to_state}  on event  '{event}'"
 
     def get_initial_state(self):
-        initial_states = [state_id for state_id, node in self.span_tree.items() if not node["children"]]
+        initial_states = [
+            state_id
+            for state_id, node in self.span_tree.items()
+            if not node["children"]
+        ]
         initial_state_id = min(initial_states)
         return initial_state_id
-    
-    
-
 
     def generate_class_code(self):
         return generate_class_code(self)
@@ -203,36 +208,36 @@ class LogicalSquareFSM:
 
     def serialize_object(self):
         return {
-            'span_tree': self.serialize_span_tree(),
-            'root': self.root,
-            'current_id': self.current_id,
-            'suffix_index': self.suffix_index,
-            'attributes': self.attributes,
-            'latest_states': self.latest_states,
-            'transitions': self.transitions,
-            'state_transitions_map': self.state_transitions_map
+            "span_tree": self.serialize_span_tree(),
+            "root": self.root,
+            "current_id": self.current_id,
+            "suffix_index": self.suffix_index,
+            "attributes": self.attributes,
+            "latest_states": self.latest_states,
+            "transitions": self.transitions,
+            "state_transitions_map": self.state_transitions_map,
         }
 
     def serialize_span_tree(self):
         result = deepcopy(self.span_tree)
         for key, value in result.items():
-            if not isinstance(value['state'], State):
+            if not isinstance(value["state"], State):
                 continue
 
-            result[key]['state'] = value['state'].serialize_state()
+            result[key]["state"] = value["state"].serialize_state()
 
         return result
 
     @classmethod
     def deserialize_logical_square_fsm(cls, fsm_state):
-        for key, value in fsm_state['span_tree'].items():
-            if type(value['state']) is not str:
-                fsm_state['span_tree'][key]['state'] = State(
-                    state_id=value['state']['state_id'],
-                    assertion=value['state']['assertion'],
-                    name=value['state']['name'] if 'name' in value['state'].keys() else None,
+        for key, value in fsm_state["span_tree"].items():
+            if type(value["state"]) is not str:
+                fsm_state["span_tree"][key]["state"] = State(
+                    state_id=value["state"]["state_id"],
+                    assertion=value["state"]["assertion"],
+                    name=value["state"]["name"]
+                    if "name" in value["state"].keys()
+                    else None,
                 )
 
         return cls(fsm_state)
-
-

@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os
 import re
 from typing import Any
 
@@ -19,9 +20,12 @@ add_square(a, e, i, o, parent_id?)
 
 assign_name(state_id, name)
   Assign a human-readable label to a state by its ID.
+  If no name is given, create name based on states.
 
 add_transition(from_state, to_state, event)
   Add a labelled transition between two existing states.
+  If no trigger event is given, create one based on states.
+  If multiple transitions are added
 
 check_states(states)
   Verify logical disjointness. states: list of condition strings,
@@ -34,7 +38,7 @@ analyze_reachability()
   Find pairs of states where one is not reachable from the other.
 
 reset()
-  Reset the entire project to its initial empty state.\
+  Reset the entire project to its initial empty state.
 """
 
 
@@ -44,6 +48,28 @@ class BotAgent(BaseAgent):
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__("BotAgent", config)
         self._llm = None
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        self.history_file = os.path.join(current_dir, "chat_history.json")
+        self.chat_history: list[str] = []
+        self.chat_history = self._load_history()
+
+    def _load_history(self) -> list[str]:
+        if os.path.exists(self.history_file):
+            with open(self.history_file, encoding="utf-8") as f:
+                return json.load(f)
+        return []
+
+    def _save_history(self):
+        with open(self.history_file, "w", encoding="utf-8") as f:
+            json.dump(self.chat_history, f, ensure_ascii=False, indent=4)
+
+    def add_message(self, message: str):
+        self.chat_history.append(message)
+        self._save_history()
+
+    def clear_history(self):
+        self.chat_history = []
+        self._save_history()
 
     @property
     def _llm_agent(self):
@@ -77,7 +103,7 @@ class BotAgent(BaseAgent):
 
         prompt = f"""\
 You are an IDE Bot for a Logical Square FSM tool.
-Given the user command and the current FSM state, identify the single operation to perform and extract its parameters.
+Given conversation history, the user command and the current FSM state, identify the single operation to perform and extract its parameters.
 
 AVAILABLE OPERATIONS:
 {_OPERATIONS}
@@ -104,7 +130,8 @@ Respond ONLY with a valid JSON object — no markdown, no extra text:
 Rules:
 - Reference states by their exact IDs shown above.
 - If the command is ambiguous or unsupported, use operation "unknown" and explain in message.
-- For add_transition: params MUST contain "from_state", "to_state", AND "event". Never omit "event".
+- For assign_name: params MUST contain "state_id" and "name". If you need to assign multiple names to states, return "state_id" and "name" as lists.
+- For add_transition: params MUST contain "from_state", "to_state", AND "event". Never omit "event". If you need to add multiple transitions, return "from_state", "to_state", "event" as lists
 - For add_square: if "States eligible for expansion" is not "(none)", params MUST include "parent_id" set to one of those IDs.
 - For add_square: a and o MUST be different values; e and i MUST be different values. If the user's input would violate this, use operation "unknown" and explain the constraint.
 - For generate_code: params.format must be "class", "transition", or "qt".
@@ -120,8 +147,15 @@ Rules:
 """
 
         try:
+            llm_prompt = (
+                "History of interactions:\n"
+                + "\n".join(self._load_history())
+                + "End of history.\n\n"
+                + prompt
+            )
+
             raw = await asyncio.wait_for(
-                self._llm_agent._call_llm(prompt, temperature=0.1),
+                self._llm_agent._call_llm(llm_prompt, temperature=0.1),
                 timeout=120.0,
             )
         except asyncio.TimeoutError:

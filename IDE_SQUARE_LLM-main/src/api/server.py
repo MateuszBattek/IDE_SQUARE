@@ -206,6 +206,35 @@ class BotIntentRequest(BaseModel):
     fsm_context: dict[str, Any] = {}
 
 
+class HistoryEntry(BaseModel):
+    message: str
+
+
+@app.post("/bot/history/clear")
+async def clear_history():
+    from src.agents.bot_agent import BotAgent
+
+    bot_agent = BotAgent()
+    bot_agent.clear_history()
+
+    return {"message": "Chat history cleared"}
+
+
+@app.post("/bot/history/add")
+async def add_history_entry(entry: HistoryEntry):
+    from src.agents.bot_agent import BotAgent
+
+    bot_agent = BotAgent()
+    # Dodajemy wiadomość przesłaną w polu "message"
+    bot_agent.add_message(entry.message)
+
+    return {
+        "status": "success",
+        "added": entry.message,
+        "history_size": len(bot_agent.chat_history),
+    }
+
+
 @app.post("/bot/intent")
 async def bot_intent(request: BotIntentRequest) -> dict[str, Any]:
     """Classify a natural-language command into an IDE operation with parameters."""
@@ -218,17 +247,19 @@ async def bot_intent(request: BotIntentRequest) -> dict[str, Any]:
 
     try:
         config.validate()
-        agent = BotAgent()
+        bot_agent = BotAgent()
         logic_agent = LogicAgent()
         state_agent = StateAgent()
         class_agent = ClassAgent()
 
-        bot_result = await agent.execute(
+        bot_result = await bot_agent.execute(
             {
                 "message": request.message,
                 "fsm_context": request.fsm_context,
             }
         )
+        bot_agent.add_message("User message: " + request.message)
+
         if not bot_result["success"]:
             return {
                 "operation": "error",
@@ -320,6 +351,7 @@ async def bot_intent(request: BotIntentRequest) -> dict[str, Any]:
             # Dołączamy model ontologii do odpowiedzi dla GUI
             intent["ontology_model"] = ontology_res["ontology"]
 
+        bot_agent.add_message("Bot intent: " + str(intent))
         return intent
 
     except Exception as exc:
