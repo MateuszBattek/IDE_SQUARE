@@ -212,6 +212,7 @@ async def bot_intent(request: BotIntentRequest) -> dict[str, Any]:
     from src.agents.bot_agent import BotAgent
     from src.agents.class_agent import ClassAgent
     from src.agents.logic_agent import LogicAgent
+    from src.agents.state_agent import StateAgent
 
     from ..models import OntologyModel
 
@@ -219,6 +220,7 @@ async def bot_intent(request: BotIntentRequest) -> dict[str, Any]:
         config.validate()
         agent = BotAgent()
         logic_agent = LogicAgent()
+        state_agent = StateAgent()
         class_agent = ClassAgent()
 
         bot_result = await agent.execute(
@@ -279,22 +281,44 @@ async def bot_intent(request: BotIntentRequest) -> dict[str, Any]:
                     "message": f"Logika kwadratu jest błędna: {error_msg}",
                 }
 
-        ontology_res = await class_agent.process(
-            {"logic_model": logic_input["requirements"]}
-        )
+            # Przekształcamy kwadrat logiczny na stany i przejścia
+            try:
+                state_input = {
+                    "logic_model": {
+                        "relations": logic_res["logic_model"].get("relations", [])
+                    },
+                    "requirements": {
+                        # Próbujemy wyciągnąć listę stanów z parametrów bota lub z automatu
+                        "states": params.get("states", [])
+                    },
+                }
 
-        # Jeśli ClassAgent wykryje np. cykle w dziedziczeniu (A->B, B->A)
-        ontology_data = ontology_res["ontology"]
-        ontology_object = OntologyModel(**ontology_data)
-        validation = class_agent.validate_ontology(ontology_object)
-        if not validation["is_valid"]:
-            return {
-                "operation": "error",
-                "message": f"Błąd struktury ontologii: {validation['issues'][0]['description']}",
-            }
+                state_result = await state_agent.process(state_input)
 
-        # Dołączamy model ontologii do odpowiedzi dla GUI
-        intent["ontology_model"] = ontology_res["ontology"]
+                # Zapisujemy wynik maszyny stanów do intencji
+                intent["state_machine"] = state_result.get("state_machine")
+
+            except Exception as e:
+                logger.error(f"StateAgent Error: {e}")
+                # Nie przerywamy, jeśli FSM się nie uda, ale logujemy błąd
+                intent["state_machine_error"] = str(e)
+
+            ontology_res = await class_agent.process(
+                {"logic_model": logic_input["requirements"]}
+            )
+
+            # Jeśli ClassAgent wykryje np. cykle w dziedziczeniu (A->B, B->A)
+            ontology_data = ontology_res["ontology"]
+            ontology_object = OntologyModel(**ontology_data)
+            validation = class_agent.validate_ontology(ontology_object)
+            if not validation["is_valid"]:
+                return {
+                    "operation": "error",
+                    "message": f"Błąd struktury ontologii: {validation['issues'][0]['description']}",
+                }
+
+            # Dołączamy model ontologii do odpowiedzi dla GUI
+            intent["ontology_model"] = ontology_res["ontology"]
 
         return intent
 

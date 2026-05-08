@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 import re
-from typing import Any, Dict, Optional
+from typing import Any
 
 from ..agents.base_agent import BaseAgent
 
@@ -41,7 +41,7 @@ reset()
 class BotAgent(BaseAgent):
     """Classifies a natural-language command into a single IDE operation with parameters."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         super().__init__("BotAgent", config)
         self._llm = None
 
@@ -49,22 +49,29 @@ class BotAgent(BaseAgent):
     def _llm_agent(self):
         if self._llm is None:
             from .llm_agent import LLMAgent
+
             self._llm = LLMAgent()
         return self._llm
 
-    async def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def process(self, input_data: dict[str, Any]) -> dict[str, Any]:
         message = input_data.get("message", "")
         fsm_context = input_data.get("fsm_context", {})
 
-        states_text = "\n".join(
-            f"  id={s['id']}  name={s.get('name', s['id'])}  assertion={s.get('assertion', '')}"
-            for s in fsm_context.get("states", [])
-        ) or "  (none — project is empty)"
+        states_text = (
+            "\n".join(
+                f"  id={s['id']}  name={s.get('name', s['id'])}  assertion={s.get('assertion', '')}"
+                for s in fsm_context.get("states", [])
+            )
+            or "  (none — project is empty)"
+        )
 
-        transitions_text = "\n".join(
-            f"  {t['from']} → {t['to']}  event: {t['event']}"
-            for t in fsm_context.get("transitions", [])
-        ) or "  (none)"
+        transitions_text = (
+            "\n".join(
+                f"  {t['from']} → {t['to']}  event: {t['event']}"
+                for t in fsm_context.get("transitions", [])
+            )
+            or "  (none)"
+        )
 
         latest_text = ", ".join(fsm_context.get("latest_states", [])) or "(none)"
 
@@ -123,7 +130,9 @@ Rules:
                 "params": {},
                 "message": "I didn't understand that — please try rephrasing your command.",
             }
-            logger.info("[BotAgent] operation: %s", json.dumps(result, ensure_ascii=False))
+            logger.info(
+                "[BotAgent] operation: %s", json.dumps(result, ensure_ascii=False)
+            )
             return result
 
         cleaned = raw.strip()
@@ -137,6 +146,20 @@ Rules:
                 "params": parsed.get("params", {}),
                 "message": parsed.get("message", ""),
             }
+            operation = result["operation"]
+            params = result["params"]
+            if operation == "add_square":
+                # Normalizujemy wszystkie 4 rogi kwadratu
+                for corner in ["a", "e", "i", "o"]:
+                    if corner in params and isinstance(params[corner], str):
+                        params[corner] = self._llm_agent._normalize_entity(
+                            params[corner]
+                        )
+            elif operation == "add_transition":
+                # Normalizujemy nazwę zdarzenia (event)
+                if "event" in params and isinstance(params["event"], str):
+                    params["event"] = self._llm_agent._normalize_entity(params["event"])
+
         except json.JSONDecodeError:
             result = {
                 "operation": "unknown",

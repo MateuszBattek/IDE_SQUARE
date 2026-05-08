@@ -1,18 +1,18 @@
 from typing import List, Optional, Tuple
 
-from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtWidgets import QWidget
-
-from views.gui import Ui_MainWindow
-from components.fsm_components.fsm import LogicalSquareFSM
-from components.fsm_components.sm_analyzer import find_unreachable_pairs_in_state_machine
-from components.fsm_components import graph_gen as gg
 from components import ai_module as aim
 from components import solver
 from components.bot_client import BotServiceClient
 from components.file_storage import FileStorage
+from components.fsm_components import graph_gen as gg
+from components.fsm_components.fsm import LogicalSquareFSM
+from components.fsm_components.sm_analyzer import (
+    find_unreachable_pairs_in_state_machine,
+)
 from components.logger import LogManager
-from PyQt5 import QtGui
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtWidgets import QWidget
+from views.gui import Ui_MainWindow
 
 
 class MainWindowController(QtWidgets.QMainWindow):
@@ -69,7 +69,11 @@ class MainWindowController(QtWidgets.QMainWindow):
 
         self.ui.theorem_prover_button.clicked.connect(self._gui_analyze_reachability)
 
-        self.gen_buttons = [self.ui.class_button, self.ui.trans_button, self.ui.qt_button]
+        self.gen_buttons = [
+            self.ui.class_button,
+            self.ui.trans_button,
+            self.ui.qt_button,
+        ]
         for button in self.gen_buttons:
             button.clicked.connect(self._gui_generate_code)
 
@@ -125,9 +129,7 @@ class MainWindowController(QtWidgets.QMainWindow):
         if not to_state:
             return "Target state cannot be empty."
         self.fsm.add_transition(from_state, to_state, event)
-        self.logger.log(
-            f"Added transition {from_state} → {to_state} on event: {event}"
-        )
+        self.logger.log(f"Added transition {from_state} → {to_state} on event: {event}")
         return None
 
     def check_states(self, states: List[str]) -> str:
@@ -172,7 +174,12 @@ class MainWindowController(QtWidgets.QMainWindow):
             return
 
         if self.fsm.latest_states:
-            for field in [self.ui.inputA, self.ui.inputE, self.ui.inputI, self.ui.inputO]:
+            for field in [
+                self.ui.inputA,
+                self.ui.inputE,
+                self.ui.inputI,
+                self.ui.inputO,
+            ]:
                 field.clear()
             self.show_tree_widget()
             self.show_missing_buttons()
@@ -240,13 +247,18 @@ class MainWindowController(QtWidgets.QMainWindow):
     def show_logs(self):
         self.hide_widgets(self.ui.logs)
         log_entries = self.logger.get_logs()
-        self.ui.log_output.setPlainText('\n'.join(log_entries))
+        self.ui.log_output.setPlainText("\n".join(log_entries))
 
     def save_project(self):
         from PyQt5.QtWidgets import QFileDialog, QMessageBox
-        file_path, _ = QFileDialog.getSaveFileName(self, "Save Project", "", "JSON Files (*.json)")
+
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Save Project", "", "JSON Files (*.json)"
+        )
         if not file_path:
-            QMessageBox.warning(self, "Warning", "No file path selected. Project not saved.")
+            QMessageBox.warning(
+                self, "Warning", "No file path selected. Project not saved."
+            )
             return
         try:
             if isinstance(file_path, str) and file_path.strip():
@@ -260,28 +272,41 @@ class MainWindowController(QtWidgets.QMainWindow):
                 self.logger.log("Saved project to file.")
                 QMessageBox.information(self, "Success", "Project saved successfully.")
             else:
-                QMessageBox.critical(self, "Error", "Invalid file path provided for saving.")
+                QMessageBox.critical(
+                    self, "Error", "Invalid file path provided for saving."
+                )
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to save project: {e}")
 
     def load_project(self):
         from PyQt5.QtWidgets import QFileDialog, QMessageBox
-        file_path, _ = QFileDialog.getOpenFileName(self, "Open Project File", "", "JSON Files (*.json);;All Files (*)")
+
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Open Project File", "", "JSON Files (*.json);;All Files (*)"
+        )
         if not file_path:
-            QMessageBox.warning(self, "Warning", "No file path selected. Project not loaded.")
+            QMessageBox.warning(
+                self, "Warning", "No file path selected. Project not loaded."
+            )
             return
         try:
             fsm_state, solver_example = self.file_storage.load_state(file_path)
             self.logger.log("Loaded project from file.")
             self.fsm = LogicalSquareFSM.deserialize_logical_square_fsm(fsm_state)
             self.expanded_states = [
-                key for key, value in self.fsm.span_tree.items()
-                if len(value['children']) != 0
+                key
+                for key, value in self.fsm.span_tree.items()
+                if len(value["children"]) != 0
             ]
             if solver_example:
                 self.ui.solver_input.setPlainText("\n".join(solver_example))
             if len(self.fsm.latest_states) > 0:
-                for field in [self.ui.inputA, self.ui.inputE, self.ui.inputI, self.ui.inputO]:
+                for field in [
+                    self.ui.inputA,
+                    self.ui.inputE,
+                    self.ui.inputI,
+                    self.ui.inputO,
+                ]:
                     field.clear()
                 self.show_tree_widget()
                 self.show_missing_buttons()
@@ -305,7 +330,8 @@ class MainWindowController(QtWidgets.QMainWindow):
     def show_name_widget(self):
         self.hide_widgets(self.ui.names)
         all_state_ids = [
-            state_id for state_id in self.fsm.span_tree.keys()
+            state_id
+            for state_id in self.fsm.span_tree.keys()
             if state_id not in self.expanded_states
         ]
         self.fill_states_box(all_state_ids, self.ui.namebox)
@@ -387,11 +413,19 @@ class MainWindowController(QtWidgets.QMainWindow):
         self.ui.expandbox.setVisible(True)
         for widget in [
             self.ui.add_square_button,
-            self.ui.inputA, self.ui.inputE, self.ui.inputI, self.ui.inputO,
-            self.ui.labelA, self.ui.labelE, self.ui.labelI, self.ui.labelO,
+            self.ui.inputA,
+            self.ui.inputE,
+            self.ui.inputI,
+            self.ui.inputO,
+            self.ui.labelA,
+            self.ui.labelE,
+            self.ui.labelI,
+            self.ui.labelO,
         ]:
             geometry = widget.geometry()
-            widget.setGeometry(geometry.x(), geometry.y() + 50, geometry.width(), geometry.height())
+            widget.setGeometry(
+                geometry.x(), geometry.y() + 50, geometry.width(), geometry.height()
+            )
         self.ui.addsquare.setText("Expand States")
         self.ui.addlabel.setText(
             "Choose a state to expand from box below and replace it with a new logical square. "
@@ -400,8 +434,12 @@ class MainWindowController(QtWidgets.QMainWindow):
 
     def show_missing_buttons(self):
         for button in [
-            self.ui.tree_button, self.ui.sm_button, self.ui.assertions_button,
-            self.ui.expand_button, self.ui.save_button, self.ui.gen_button,
+            self.ui.tree_button,
+            self.ui.sm_button,
+            self.ui.assertions_button,
+            self.ui.expand_button,
+            self.ui.save_button,
+            self.ui.gen_button,
             self.ui.solver_button,
         ]:
             button.setVisible(True)
@@ -417,8 +455,12 @@ class MainWindowController(QtWidgets.QMainWindow):
 
     def update_state_box(self):
         current_state = self.ui.frombox.currentText()
-        all_states = [s for s in self.fsm.span_tree.keys() if s not in self.expanded_states]
-        existing_targets = self.fsm.state_transitions_map.get(current_state, {}).values()
+        all_states = [
+            s for s in self.fsm.span_tree.keys() if s not in self.expanded_states
+        ]
+        existing_targets = self.fsm.state_transitions_map.get(
+            current_state, {}
+        ).values()
         available = [s for s in all_states if s not in existing_targets and s]
         self.ui.tobox.clear()
         for state in available:
@@ -426,8 +468,7 @@ class MainWindowController(QtWidgets.QMainWindow):
 
     def remove_transitions_for_expanded_state(self, state_id):
         self.fsm.transitions = [
-            t for t in self.fsm.transitions
-            if t[0] != state_id and t[1] != state_id
+            t for t in self.fsm.transitions if t[0] != state_id and t[1] != state_id
         ]
 
     def reset_action(self):
@@ -456,26 +497,28 @@ class MainWindowController(QtWidgets.QMainWindow):
             self._bot_initialized = True
             self._bot_append_system(
                 "Hello! I'm the IDE Bot. Describe what you'd like to do.<br>"
-                "<i>Examples: \"add a transition from 1a to 1b when engine starts\", "
-                "\"generate class code\", \"check state disjointness\"</i>"
+                '<i>Examples: "add a transition from 1a to 1b when engine starts", '
+                '"generate class code", "check state disjointness"</i>'
             )
 
     def _build_fsm_snapshot(self) -> dict:
         from components.fsm_components.state import State
+
         states = []
         for sid, data in self.fsm.span_tree.items():
             if sid not in self.expanded_states and isinstance(data["state"], State):
                 s = data["state"]
-                states.append({
-                    "id": sid,
-                    "name": s.name or sid,
-                    "assertion": getattr(s, "assertion", ""),
-                })
+                states.append(
+                    {
+                        "id": sid,
+                        "name": s.name or sid,
+                        "assertion": getattr(s, "assertion", ""),
+                    }
+                )
         return {
             "states": states,
             "transitions": [
-                {"from": t[0], "to": t[1], "event": t[2]}
-                for t in self.fsm.transitions
+                {"from": t[0], "to": t[1], "event": t[2]} for t in self.fsm.transitions
             ],
             "latest_states": self.fsm.latest_states,
         }
@@ -498,15 +541,49 @@ class MainWindowController(QtWidgets.QMainWindow):
         except TypeError:
             pass
 
-        self.bot_client.signals.response_received.connect(self._on_bot_response)
+        self.bot_client.signals.response_received.connect(
+            self._on_bot_response, QtCore.Qt.QueuedConnection
+        )
         self.bot_client.signals.error.connect(self._on_bot_error)
         self.bot_client.send_message_async(prompt, self._build_fsm_snapshot())
 
     def _on_bot_response(self, result: dict):
+        print(f"DEBUG: Otrzymano operację: {result.get('operation')}")
         self.ui.bot.send_button.setEnabled(True)
         operation = result.get("operation", "unknown")
         params = result.get("params", {})
         message = result.get("message", "")
+        data = result.get("data", {})
+        print(
+            f"Operation: {operation}, Params: {params}, Message: {message}, Data: {data}"
+        )
+
+        if operation in ("unknown", "error"):
+            self._bot_append_system(message)
+            return
+
+        confirm_text = f"<b>Bot proposes an action:</b><br>{message}<br><br>Do you want to continue?"
+        if operation == "add_square":
+            confirm_text = (
+                f"<b>Bot proposes an action:</b><br>{message}<br>"
+                f"<b>Parametry:</b><br>"
+                f"A: {params['a']}<br>"
+                f"E: {params['e']}<br>"
+                f"I: {params['i']}<br>"
+                f"O: {params['o']}<br>"
+                "Do you want to continue?"
+            )
+
+        reply = QtWidgets.QMessageBox.question(
+            self,
+            "Potwierdzenie operacji",
+            confirm_text,
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+        )
+
+        if reply == QtWidgets.QMessageBox.No:
+            self._bot_append_system("Operation canseled by user.")
+            return
 
         if message:
             self._bot_append_bot(message)
@@ -526,15 +603,26 @@ class MainWindowController(QtWidgets.QMainWindow):
                 self._bot_append_system(f"Could not add square: {error}")
             else:
                 self.show_missing_buttons()
-                a, e, i, o = params.get("a","true"), params.get("e","true"), params.get("i","true"), params.get("o","true")
+                a, e, i, o = (
+                    params.get("a", "true"),
+                    params.get("e", "true"),
+                    params.get("i", "true"),
+                    params.get("o", "true"),
+                )
                 expanded = f" (expanded state {parent_id})" if parent_id else ""
-                self._bot_append_system(f"Done — square added{expanded}: A={a}, E={e}, I={i}, O={o}.")
+                self._bot_append_system(
+                    f"Done — square added{expanded}: A={a}, E={e}, I={i}, O={o}."
+                )
 
         elif operation == "assign_name":
-            state_id = params.get("state_id") or params.get("state") or params.get("id", "")
+            state_id = (
+                params.get("state_id") or params.get("state") or params.get("id", "")
+            )
             name = params.get("name") or params.get("label", "")
             self.assign_name(state_id=state_id, name=name)
-            self._bot_append_system(f"Done — state <b>{state_id}</b> named <b>{name}</b>.")
+            self._bot_append_system(
+                f"Done — state <b>{state_id}</b> named <b>{name}</b>."
+            )
 
         elif operation == "add_transition":
             event = (
@@ -553,7 +641,9 @@ class MainWindowController(QtWidgets.QMainWindow):
             else:
                 from_state = params.get("from_state") or params.get("from", "")
                 to_state = params.get("to_state") or params.get("to", "")
-                error = self.add_transition(from_state=from_state, to_state=to_state, event=event)
+                error = self.add_transition(
+                    from_state=from_state, to_state=to_state, event=event
+                )
                 if error:
                     self._bot_append_system(f"Could not add transition: {error}")
                 else:
@@ -564,7 +654,9 @@ class MainWindowController(QtWidgets.QMainWindow):
                         if k not in self.expanded_states
                     ]
                     gg.draw_state_machine(self.ui.sm_plot, transitions, all_states)
-                    self._bot_append_system(f"Done — transition <b>{from_state} → {to_state}</b> on event <b>{event}</b>.")
+                    self._bot_append_system(
+                        f"Done — transition <b>{from_state} → {to_state}</b> on event <b>{event}</b>."
+                    )
 
         elif operation == "check_states":
             states = params.get("states", [])
@@ -591,8 +683,21 @@ class MainWindowController(QtWidgets.QMainWindow):
         elif operation == "reset":
             self.reset_action()
 
-        elif operation in ("unknown", "error"):
-            pass  # message already shown above
+        elif operation == "build_system":
+            # Bot przeanalizował tekst i wygenerował listę kroków
+            steps = params.get("steps", [])
+            for step in steps:
+                op = step.get("operation")
+                p = step.get("params", {})
+                if op == "add_square":
+                    self.add_square(**p)
+                elif op == "add_transition":
+                    self.add_transition(**p)
+
+            self.show_tree_widget()
+            self._bot_append_system(
+                "System został zbudowany na podstawie Twojego opisu."
+            )
 
     def _on_bot_error(self, error_msg: str):
         self.ui.bot.send_button.setEnabled(True)
@@ -668,7 +773,9 @@ class MainWindowController(QtWidgets.QMainWindow):
             messages = data.get("messages", [])
             state_machine = data.get("state_machine", {})
             states_count = len(state_machine.get("states", []))
-            self.ui.ai.ai_feedback.append(f"Step {step}: {node} ({states_count} states)")
+            self.ui.ai.ai_feedback.append(
+                f"Step {step}: {node} ({states_count} states)"
+            )
             if messages:
                 for msg in messages[-1:]:
                     content = msg.get("content", "")
@@ -695,7 +802,9 @@ class MainWindowController(QtWidgets.QMainWindow):
             self.ui.ai.ai_feedback.append("States and transitions applied to FSM.")
             self.show_missing_buttons()
         else:
-            self.ui.ai.ai_feedback.append("No states generated. Try a different prompt.")
+            self.ui.ai.ai_feedback.append(
+                "No states generated. Try a different prompt."
+            )
 
     def _on_agent_error(self, error_msg):
         self.ui.send_request_button.setEnabled(True)

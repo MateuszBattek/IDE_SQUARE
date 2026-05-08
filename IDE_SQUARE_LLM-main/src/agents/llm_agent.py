@@ -1,15 +1,16 @@
-import os
-import openai
-import google.generativeai as genai
 import json
 import re
-from typing import Dict, Any, Optional, List
+from typing import Any
+
+import google.generativeai as genai
+import openai
+
 from ..agents.base_agent import BaseAgent
 from ..config import config
 
 
 class LLMAgent(BaseAgent):
-    def __init__(self, agent_config: Optional[Dict[str, Any]] = None):
+    def __init__(self, agent_config: dict[str, Any] | None = None):
         super().__init__("LLMAgent", agent_config)
 
         self.gemini_enabled = False
@@ -85,19 +86,19 @@ class LLMAgent(BaseAgent):
 
         return text
 
-    async def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def process(self, input_data: dict[str, Any]) -> dict[str, Any]:
         task_type = input_data.get("task_type", "extract_requirements")
 
         if task_type == "extract_requirements":
             return await self._extract_requirements(input_data)
         elif task_type == "coordinate_agents":
             return await self._coordinate_agents(input_data)
-        elif task_type == "infer_logic_square": 
+        elif task_type == "infer_logic_square":
             return await self._infer_square_relations(input_data)
         else:
             raise ValueError(f"Unknown task type: {task_type}")
 
-    async def _extract_requirements(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def _extract_requirements(self, input_data: dict[str, Any]) -> dict[str, Any]:
         user_input = input_data.get("user_input", "")
 
         prompt = f"""
@@ -204,7 +205,7 @@ class LLMAgent(BaseAgent):
             "confidence": requirements.get("overall_confidence", 0.5),
         }
 
-    async def _coordinate_agents(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def _coordinate_agents(self, input_data: dict[str, Any]) -> dict[str, Any]:
         current_results = input_data.get("agent_results", {})
         target_goal = input_data.get("goal", "")
 
@@ -253,7 +254,7 @@ class LLMAgent(BaseAgent):
         else:
             return 0.6
 
-    def _extract_next_agents(self, plan: str) -> List[str]:
+    def _extract_next_agents(self, plan: str) -> list[str]:
         agents = []
         if "logic" in plan.lower():
             agents.append("LogicAgent")
@@ -263,7 +264,7 @@ class LLMAgent(BaseAgent):
             agents.append("ProverAgent")
         return agents
 
-    def _assess_progress(self, results: Dict[str, Any]) -> float:
+    def _assess_progress(self, results: dict[str, Any]) -> float:
         # Count non-empty results (logic_model, ontology_model, state_machine, verification_results)
         completed = 0
         if results.get("logic_model"):
@@ -277,9 +278,10 @@ class LLMAgent(BaseAgent):
 
         total_expected = 4  # Logic, Ontology, State, Verifier
         return min(completed / total_expected, 1.0) if total_expected > 0 else 0.0
-    
-    
-    async def _infer_square_relations(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+
+    async def _infer_square_relations(
+        self, input_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Infer the missing three relations of the Square of Opposition
         from one *true* given relation.
@@ -292,8 +294,12 @@ class LLMAgent(BaseAgent):
 
         input_relation = input_data.get("relation", {})
 
-        if not input_relation or not all(k in input_relation for k in ["type", "subject", "predicate"]):
-            raise ValueError("Input relation must contain 'type', 'subject', and 'predicate'.")
+        if not input_relation or not all(
+            k in input_relation for k in ["type", "subject", "predicate"]
+        ):
+            raise ValueError(
+                "Input relation must contain 'type', 'subject', and 'predicate'."
+            )
 
         relation_type = input_relation["type"]
         subject = self._normalize_entity(input_relation["subject"])
@@ -348,7 +354,7 @@ class LLMAgent(BaseAgent):
                 raise ValueError("Incorrect number of inferred relations.")
 
             # Ensure all fields exist; if missing → fallback
-    
+
             for relation in inferred:
                 if not all(k in relation for k in ["type", "square_label", "status"]):
                     raise ValueError("Malformed relation fields.")
@@ -357,10 +363,7 @@ class LLMAgent(BaseAgent):
 
         except Exception:
             # If parsing fails - deterministic fallback
-            return {
-                "inferred_relations": None 
-            }
-
+            return {"inferred_relations": None}
 
     # ───────────────────────────────────────────────
     # Helper: canonical statements for A/E/I/O

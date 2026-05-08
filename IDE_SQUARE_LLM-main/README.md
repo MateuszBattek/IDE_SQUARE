@@ -51,7 +51,7 @@ asyncio.run(main())
 
 ```bash
 # start FastAPI service (WS /workflow) with sqlite sessions
-python -m src.main serve --host 127.0.0.1 --port 8000
+uv run python -m src.main serve --host 127.0.0.1 --port 8000
 ```
 
 - Env vars: `OPENAI_API_KEY` (required), `SQUARE_IDE_DB_PATH` (optional sqlite path), `OPENAI_MODEL` (optional).
