@@ -500,7 +500,7 @@ class MainWindowController(QtWidgets.QMainWindow):
             self._bot_append_system(
                 "Hello! I'm the IDE Bot. Describe what you'd like to do.<br>"
                 '<i>Examples: "add a transition from 1a to 1b when engine starts", '
-                '"generate class code", "check state disjointness"</i>'
+                '"assign name to state 1a: taxing", "add state/expand state 1c A=..., E=..."</i>'
             )
 
     def _build_fsm_snapshot(self) -> dict:
