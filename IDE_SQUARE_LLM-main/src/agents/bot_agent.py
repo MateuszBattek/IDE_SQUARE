@@ -27,10 +27,6 @@ add_transition(from_state, to_state, event)
   If no trigger event is given, create one based on states.
   If multiple transitions are added
 
-check_states(states)
-  Verify logical disjointness. states: list of condition strings,
-  e.g. ["flying=true, grounded=false", "grounded=true, flying=false"].
-
 generate_code(format)
   Generate source code. format must be exactly one of: "class", "transition", "qt".
 
@@ -143,7 +139,17 @@ Rules:
     A and E are contrary  (cannot both be true).
     I and O are subcontrary (cannot both be false).
   Use these rules to produce a logically consistent set of 4 assertions. The inferred assertions must describe the same conceptual domain as the ones supplied.
-- For add_square: the values of a, e, i, o MUST express only the new square's own logic — never include or echo the parent state's assertion string. The parent state is context only.\
+- For add_square: the values of a, e, i, o MUST express only the new square's own logic — never include or echo the parent state's assertion string. The parent state is context only.
+- For add_square, validate the meaning of provided corners before inferring missing ones.
+  A (universal affirmative) must express:
+      "All X are Y"
+  E (universal negative) must express:
+      "No X are Y"
+  I (particular affirmative) must express:
+      "Some X are Y"
+  O (particular negative) must express:
+      "Some X are not Y"
+- If user provides multiple transitions in one sentence, you MUST split them into separate transition objects in arrays. Each transition MUST be atomic.
 """
 
         try:

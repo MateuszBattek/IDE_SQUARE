@@ -242,6 +242,7 @@ async def bot_intent(request: BotIntentRequest) -> dict[str, Any]:
     from src.agents.class_agent import ClassAgent
     from src.agents.logic_agent import LogicAgent
     from src.agents.state_agent import StateAgent
+    from src.agents.verifier_agent import VerifierAgent
 
     from ..models import OntologyModel
 
@@ -251,6 +252,7 @@ async def bot_intent(request: BotIntentRequest) -> dict[str, Any]:
         logic_agent = LogicAgent()
         state_agent = StateAgent()
         class_agent = ClassAgent()
+        verifier_agent = VerifierAgent()
 
         bot_result = await bot_agent.execute(
             {
@@ -309,7 +311,7 @@ async def bot_intent(request: BotIntentRequest) -> dict[str, Any]:
                 return {
                     "operation": "unknown",
                     "params": {},
-                    "message": f"Logika kwadratu jest błędna: {error_msg}",
+                    "message": f"Square verification failed: {error_msg}",
                 }
 
             # Przekształcamy kwadrat logiczny na stany i przejścia
@@ -322,6 +324,7 @@ async def bot_intent(request: BotIntentRequest) -> dict[str, Any]:
                         # Próbujemy wyciągnąć listę stanów z parametrów bota lub z automatu
                         "states": params.get("states", [])
                     },
+                    "llm_agent": bot_agent._llm_agent,
                 }
 
                 state_result = await state_agent.process(state_input)
@@ -350,6 +353,45 @@ async def bot_intent(request: BotIntentRequest) -> dict[str, Any]:
 
             # Dołączamy model ontologii do odpowiedzi dla GUI
             intent["ontology_model"] = ontology_res["ontology"]
+
+            # Przygotowanie paczki wejściowej dla VerifierAgent
+            verifier_input = {
+                "logic_model": logic_res.get("logic_model"),
+                "ontology": ontology_res.get("ontology"),
+                "state_machine": state_result.get("state_machine"),
+                "requirements": logic_input.get(
+                    "requirements", {}
+                ),  # Przekazujemy intencje do wykrywania halucynacji
+            }
+            # Wywołanie procesu weryfikacji (metoda asynchroniczna)
+            verification_output = await verifier_agent.process(verifier_input)
+            report = verification_output["verification_report"]
+
+            # Jeśli VerifierAgent wykryje błędy o krytyczności "error", blokujemy operację
+            if not verification_output["is_consistent"]:
+                # Wyciągamy pierwszy poważny błąd (error) z raportu
+                critical_issues = [
+                    i for i in report.get("issues", []) if i.get("severity") == "error"
+                ]
+                error_msg = (
+                    critical_issues[0]["description"]
+                    if critical_issues
+                    else "Wykryto niespójność modeli."
+                )
+
+                return {
+                    "operation": "error",
+                    "params": {},
+                    "message": f"Błąd spójności systemu: {error_msg}",
+                    "verification_report": report,  # Opcjonalnie zwracamy raport do GUI, aby podświetlić błędy
+                }
+
+            # Dołączamy sprawdzone, poprawne modele oraz raport (z ew. ostrzeżeniami / warnings) do odpowiedzi dla GUI
+            intent["ontology_model"] = ontology_res["ontology"]
+            intent["state_machine"] = state_result.get("state_machine")
+            intent["verification_results"] = (
+                report  # Przekazujemy pełny raport (w tym wygenerowane "fixes")
+            )
 
         bot_agent.add_message("Bot intent: " + str(intent))
         return intent
